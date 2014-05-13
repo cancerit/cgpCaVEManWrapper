@@ -28,28 +28,25 @@ use PCAP::Tabix;
 	Sanger::CGP::Caveman::Implement::prepare($options);
 	
 	my $threads = PCAP::Threaded->new($options->{'threads'});
-
+	&PCAP::Threaded::disable_out_err if(exists $options->{'index'});
+	
   # register processes
-	$threads->add_function('caveman_setup', \&Sanger::CGP::Caveman::Implement::caveman_setup);
 	$threads->add_function('caveman_split', \&Sanger::CGP::Caveman::Implement::caveman_split);
-	$threads->add_function('caveman_split_cat', \&Sanger::CGP::Caveman::Implement::concat);
-	$threads->add_function('caveman_merge', \&Sanger::CGP::Caveman::Implement::caveman_merge);
 	$threads->add_function('caveman_mstep', \&Sanger::CGP::Caveman::Implement::caveman_mstep);
   $threads->add_function('caveman_estep', \&Sanger::CGP::Caveman::Implement::caveman_estep);
-  $threads->add_function('caveman_merge_results', \&Sanger::CGP::Caveman::Implement::caveman_merge_results);
 	  
 	#Start processes in correct order, according to process (DEFAULT is caveman)
 	
 	#caveman process flow	
 	#Setup 
-	$threads->run(1, 'caveman_setup', $options);
+	Sanger::CGP::Caveman::Implement::caveman_setup($options);
 	#Split
 	#count the number of chromosomes/contigs in the fasta index
 	my $contig_count = Sanger::CGP::Caveman::Implement::file_line_count($options->{'reference'});
 	$threads->run($contig_count, 'caveman_split', $options);
 	$options->{'out_file'} = $options->{'splitList'};
 	$options->{'target_files'} = File::Spec->catfile($options->{'outdir'},$options->{'splitList'}.".*");
-	$threads->run(1, 'caveman_split_cat', $options);
+	Sanger::CGP::Caveman::Implement::concat($options);
 
 	#Split & concatenate has succeeded in running, so now count the number of split files.
 	my $split_file = File::Spec->catfile($options->{'outdir'},"splitList");
@@ -59,15 +56,15 @@ use PCAP::Tabix;
 	$threads->run($split_count, 'caveman_mstep', $options);
 
 	#Run the merge step
-	$threads->run(1,'caveman_merge',$options);
+	Sanger::CGP::Caveman::Implement::caveman_merge($options);
 
 	#Run the estep
 	$threads->run($split_count, 'caveman_estep', $options);
 	
 	#Now we have all the results... merge all the split results files into one for each type.
 	$options->{'out_file'} = File::Spec->catfile($options->{'outdir'},"."$options->{'tumour_name'}."_vs_".$options->{'normal_name'});
-	$threads->run(1, 'caveman_merge_results', $options);
-	
+	Sanger::CGP::Caveman::Implement::caveman_merge_results($options);
+	  
 	#finally cleanup after ourselves by removing the temporary output folder, split files etc.
   &cleanup($options);  
 }
