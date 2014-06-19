@@ -14,14 +14,19 @@ use File::Path qw(remove_tree make_path);
 use File::Spec;
 use Getopt::Long;
 use Pod::Usage qw(pod2usage);
+use List::Util qw(first);
 use Const::Fast qw(const);
-
 
 use PCAP::Cli;
 use Sanger::CGP::Caveman::Implement;
-use PCAP::Bedtools;
-use PCAP::Vcftools;
-use PCAP::Tabix;
+
+const my @VALID_PROCESS => qw(setup split mstep merge estep merge_results);
+my %index_max = ( 'setup'  => 1,
+									'split'  => -1,
+									'mstep'  => -1,
+									'merge'  => 1,
+									'estep'  => -1,
+									'merge_results'   => 1,);
 
 {
 	my $options = setup();
@@ -39,53 +44,61 @@ use PCAP::Tabix;
 	
 	#caveman process flow	
 	#Setup 
-	Sanger::CGP::Caveman::Implement::caveman_setup($options);
+	Sanger::CGP::Caveman::Implement::caveman_setup($options) if(!exists $options->{'process'} || $options->{'process'} eq 'setup');
 	#Split
 	#count the number of chromosomes/contigs in the fasta index
-	my $contig_count = Sanger::CGP::Caveman::Implement::file_line_count($options->{'reference'});
-	$threads->run($contig_count, 'caveman_split', $options);
-	$options->{'out_file'} = $options->{'splitList'};
-	$options->{'target_files'} = File::Spec->catfile($options->{'outdir'},$options->{'splitList'}.".*");
-	Sanger::CGP::Caveman::Implement::concat($options);
-
+	
+	if(!exists $options->{'process'} || $options->{'process'} eq 'split'){
+		$options->{'out_file'} = $options->{'splitList'};
+		my $contig_count = Sanger::CGP::Caveman::Implement::file_line_count($options->{'reference'});
+		$threads->run($contig_count, 'caveman_split', $options); 
+		$options->{'target_files'} = $options->{'splitList'}.".*";
+		Sanger::CGP::Caveman::Implement::concat($options);	
+	}
+	
+	my $split_count = Sanger::CGP::Caveman::Implement::file_line_count($options->{'splitList'}) if(!exists $options->{'process'} || first { $options->{'process'} eq $_ } ('mstep', 'estep'));
 	#Split & concatenate has succeeded in running, so now count the number of split files.
-	my $split_file = File::Spec->catfile($options->{'outdir'},"splitList");
-	my $split_count = Sanger::CGP::Caveman::Implement::file_line_count($split_file);	
-
-	#Run the mstep with number of split jobs.
-	$threads->run($split_count, 'caveman_mstep', $options);
-
+	if(!exists $options->{'process'} || $options->{'process'} eq 'mstep'){
+		#Run the mstep with number of split jobs.
+		$threads->run($split_count, 'caveman_mstep', $options);
+	}
+		
 	#Run the merge step
-	Sanger::CGP::Caveman::Implement::caveman_merge($options);
+	Sanger::CGP::Caveman::Implement::caveman_merge($options) if(!exists $options->{'process'} || $options->{'process'} eq 'merge');
 
 	#Run the estep
-	$threads->run($split_count, 'caveman_estep', $options);
+	if(!exists $options->{'process'} || $options->{'process'} eq 'estep'){
+		$threads->run($split_count, 'caveman_estep', $options);
+	}
 	
 	#Now we have all the results... merge all the split results files into one for each type.
-	$options->{'out_file'} = File::Spec->catfile($options->{'outdir'},"."$options->{'tumour_name'}."_vs_".$options->{'normal_name'});
-	Sanger::CGP::Caveman::Implement::caveman_merge_results($options);
-	  
-	#finally cleanup after ourselves by removing the temporary output folder, split files etc.
-  &cleanup($options);  
+	$options->{'out_file'} = File::Spec->catfile($options->{'outdir'},$options->{'tumour_name'}."_vs_".$options->{'normal_name'}) if(!exists $options->{'process'} || $options->{'process'} eq 'merge_results');
+	if(!exists $options->{'process'} || $options->{'process'} eq 'merge_results'){	
+		Sanger::CGP::Caveman::Implement::caveman_merge_results($options);
+	  #finally cleanup after ourselves by removing the temporary output folder, split files etc.
+  	cleanup($options); 
+  } 
 }
 
 sub cleanup{
 	my $options = shift;
 	#Get the splitFiles.* and remove them
 	
-	unlink($options->{'subvcf'});
-	unlink($options->{'snpvcf'});
-	unlink($options->{'noanalysisbed'});
-  remove_tree File::Spec->catdir($options->{'outdir'}, 'results');
-  remove_tree File::Spec->catdir($options->{'outdir'}, 'logs');
-  remove_tree File::Spec->catdir($options->{'outdir'}, 'progress');
+	unlink glob $options->{'subvcf'};
+	unlink glob $options->{'snpvcf'};
+	unlink glob $options->{'noanalysisbed'};
+	unlink glob $options->{'splitList'}.'.*';
+  remove_tree (File::Spec->catdir($options->{'outdir'}, 'results'));
+  remove_tree (File::Spec->catdir($options->{'outdir'}, 'logs'));
+  remove_tree (File::Spec->catdir($options->{'outdir'}, 'progress'));
 	return 0;
 }
 
 
 sub setup {
   my %opts;
-  GetOptions( 	'h|help' => \$opts{'h'},
+  GetOptions( 	
+  				'h|help' => \$opts{'h'},
 					'm|man' => \$opts{'m'},
 					'r|reference=s' => \$opts{'reference'},
 					'o|outdir=s' => \$opts{'outdir'},
@@ -96,6 +109,10 @@ sub setup {
 					'nc|normal-cn=s' => \$opts{'normcn'},
 					't|threads=i' => \$opts{'threads'},
 					'k|normal-contamination=f' => \$opts{'normcont'},
+					's|species=s' => \$opts{'species'},
+					'sa|species-assembly=s' => \$opts{'species-assembly'},
+					'p|process=s' => \$opts{'process'},
+					'i|index=i' => \$opts{'index'},
   ) or pod2usage(2);
 
   pod2usage(-message => PCAP::license, -verbose => 2) if(defined $opts{'h'});
@@ -106,6 +123,8 @@ sub setup {
   for(keys %opts) { $defined++ if(defined $opts{$_}); }
   pod2usage(-msg  => "\nERROR: Options must be defined.\n", -verbose => 2,  -output => \*STDERR) unless($defined);
 
+	pod2usage(-msg  => "\nERROR: Options must be defined.\n", -verbose => 2,  -output => \*STDERR) unless(defined($opts{'species'}) && defined($opts{'species-assembly'}));
+
   #check the reference is the fasta fai file.
   pod2usage(-msg  => "\nERROR: reference option (-r) does not appear to be a fasta index file.\n", -verbose => 2,  -output => \*STDERR) unless($opts{'reference'} =~ m/\.fai$/);
 
@@ -114,14 +133,46 @@ sub setup {
   PCAP::Cli::file_for_reading('tumour-bam',$opts{'tumbam'});
   PCAP::Cli::file_for_reading('normal-bam',$opts{'normbam'});
   #We should also check the bam indexes exist.
-  my $tumidx = File::Spec->catfile($opts{'tumbam'},".bai");
-  my $normidx = File::Spec->catfile($opts{'normbam'},".bai");
+  my $tumidx = $opts{'tumbam'}.".bai";
+  my $normidx = $opts{'normbam'}.".bai";
   PCAP::Cli::file_for_reading('tumour-bai',$tumidx);
   PCAP::Cli::file_for_reading('normal-bai',$normidx);  
   PCAP::Cli::file_for_reading('ignore-file',$opts{'ignore'});
   PCAP::Cli::file_for_reading('tum-cn-file',$opts{'tumcn'});
   PCAP::Cli::file_for_reading('norm-cn-file',$opts{'normcn'});
   PCAP::Cli::out_dir_check('outdir', $opts{'outdir'});
+  
+  delete $opts{'process'} unless(defined $opts{'process'});
+  delete $opts{'index'} unless(defined $opts{'index'});
+
+	$opts{'splitList'} = File::Spec->catfile($opts{'outdir'},"splitList");
+	#vcf concat subs & snps
+  $opts{'subvcf'} = File::Spec->catfile($opts{'outdir'},"results/*/*.muts.vcf");
+  $opts{'snpvcf'} = File::Spec->catfile($opts{'outdir'},"results/*/*.snps.vcf");
+	#bed concat no_analysis
+  $opts{'noanalysisbed'} = File::Spec->catfile($opts{'outdir'},"results/*/*.no_analysis.bed");	
+
+	if(exists $opts{'process'}) {
+    PCAP::Cli::valid_process('process', $opts{'process'}, \@VALID_PROCESS);
+    if(exists $opts{'index'}) {
+      my $max = $index_max{$opts{'process'}};
+      my $max_idx=0;
+      if($max==-1){
+      	$max_idx = Sanger::CGP::Caveman::Implement::valid_index(\%opts);
+      }
+
+      die "ERROR: based on reference and exclude option index must be between 1 and $max_idx\n" if($opts{'index'} < 1 || $opts{'index'} > $max);
+      PCAP::Cli::opt_requires_opts('index', \%opts, ['process']);
+
+      die "No max has been defined for this process type\n" if($max == 0);
+
+      PCAP::Cli::valid_index_by_factor('index', $opts{'index'}, $max, 1);
+    }
+  }
+  elsif(exists $opts{'index'}) {
+    die "ERROR: -index cannot be defined without -process\n";
+  }
+
 
 	# now safe to apply defaults
 	$opts{'threads'} = 1 unless(defined $opts{'threads'});
@@ -138,13 +189,7 @@ sub setup {
 	my $logs = File::Spec->catdir($opts{'outdir'}, 'logs');
    make_path($logs) unless(-d $logs);
    
-  $opts{'splitList'} = File::Spec->catfile($opts{'outdir'},"splitList");
-	#vcf concat subs & snps
-  $opts{'subvcf'} = File::Spec->catfile($opts{'outdir'},"*.muts.vcf");
-  $opts{'snpvcf'} = File::Spec->catfile($opts{'outdir'},"*.snps.vcf");
-	#bed concat no_analysis
-  $opts{'noanalysisbed'} = File::Spec->catfile($opts{'outdir'},"*.no_analysis.bed");	
-
+  
 	return \%opts; 
 }
 
@@ -159,16 +204,23 @@ caveman.pl - Analyse aligned bam files for SNVs via CaVEMan using a single comma
 caveman.pl [options]
 
   	Required parameters:
-    -outdir       -o   Folder to output result to.
-    -reference    -r   Path to reference genome index file *.fai
-	 -tumour-bam   -tb  Path to tumour bam file
-    -normal-bam   -nb  Path to normal bam file
-    -ignore-file  -ig  Path to ignored regions file
-    -tumour-cn    -tc  Path to tumour copy number file
-    -normal-cn    -nc  Path to normal copy number file
+    -outdir            -o   Folder to output result to.
+    -reference         -r   Path to reference genome index file *.fai
+	 -tumour-bam         -tb  Path to tumour bam file
+    -normal-bam        -nb  Path to normal bam file
+    -ignore-file       -ig  Path to ignored regions file
+    -tumour-cn         -tc  Path to tumour copy number file
+    -normal-cn         -nc  Path to normal copy number file
+    -species           -s   Species name for (output in VCF)
+    -species-assembly  -sa  Species assembly for (output in VCF)
     
    Optional parameters:
     -normal-contamination  -k   Normal contamination value (default 0.1)
+    -threads               -t   Number of threads allowed on this machine (default 1)
+    
+   Targeted processing (further detail under OPTIONS):
+    -process   -p   Only process this step then exit, optionally set -index
+    -index     -i   Optionally restrict '-p' to single job
 
 	Other:
     -help     -h   Brief help message.
@@ -208,6 +260,14 @@ Path to tumour copy number file (1-based first coordinate bed style format). All
 =item B<-normal-cn>
 
 Path to normal copy number file (1-based first coordinate bed style format). All analysed bases must have a CN assigned.
+
+=item B<-species>
+
+Species name for (output in VCF) e.g HUMAN
+
+=item B<-species-assembly>
+
+Species assembly for (output in VCF) e.g. 37
 
 =item B<-help>
 
