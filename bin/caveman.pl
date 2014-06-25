@@ -2,21 +2,21 @@
 
 ##########LICENCE##########
 #  Copyright (c) 2014 Genome Research Ltd.
-#  
+#
 #  Author: David Jones <cgpit@sanger.ac.uk>
-# 
+#
 #  This file is part of cavemanWrapper.
-# 
+#
 #  cavemanWrapper is free software: you can redistribute it and/or modify it under
 #  the terms of the GNU Affero General Public License as published by the Free
 #  Software Foundation; either version 3 of the License, or (at your option) any
 #  later version.
-# 
+#
 #  This program is distributed in the hope that it will be useful, but WITHOUT
 #  ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 #  FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
 #  details.
-# 
+#
 #  You should have received a copy of the GNU Affero General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 ##########LICENCE##########
@@ -53,38 +53,38 @@ my %index_max = ( 'setup'  => 1,
 {
 	my $options = setup();
 	Sanger::CGP::Caveman::Implement::prepare($options);
-	
+
 	my $threads = PCAP::Threaded->new($options->{'threads'});
 	&PCAP::Threaded::disable_out_err if(exists $options->{'index'});
-	
+
   # register processes
 	$threads->add_function('caveman_split', \&Sanger::CGP::Caveman::Implement::caveman_split);
 	$threads->add_function('caveman_mstep', \&Sanger::CGP::Caveman::Implement::caveman_mstep);
   $threads->add_function('caveman_estep', \&Sanger::CGP::Caveman::Implement::caveman_estep);
-	  
+
 	#Start processes in correct order, according to process (DEFAULT is caveman)
-	
-	#caveman process flow	
-	#Setup 
+
+	#caveman process flow
+	#Setup
 	Sanger::CGP::Caveman::Implement::caveman_setup($options) if(!exists $options->{'process'} || $options->{'process'} eq 'setup');
 	#Split
 	#count the number of chromosomes/contigs in the fasta index
-	
+
 	if(!exists $options->{'process'} || $options->{'process'} eq 'split'){
 		$options->{'out_file'} = $options->{'splitList'};
 		my $contig_count = Sanger::CGP::Caveman::Implement::file_line_count($options->{'reference'});
-		$threads->run($contig_count, 'caveman_split', $options); 
+		$threads->run($contig_count, 'caveman_split', $options);
 		$options->{'target_files'} = $options->{'splitList'}.".*";
-		Sanger::CGP::Caveman::Implement::concat($options);	
+		Sanger::CGP::Caveman::Implement::concat($options);
 	}
-	
+
 	my $split_count = Sanger::CGP::Caveman::Implement::file_line_count($options->{'splitList'}) if(!exists $options->{'process'} || first { $options->{'process'} eq $_ } ('mstep', 'estep'));
 	#Split & concatenate has succeeded in running, so now count the number of split files.
 	if(!exists $options->{'process'} || $options->{'process'} eq 'mstep'){
 		#Run the mstep with number of split jobs.
 		$threads->run($split_count, 'caveman_mstep', $options);
 	}
-		
+
 	#Run the merge step
 	Sanger::CGP::Caveman::Implement::caveman_merge($options) if(!exists $options->{'process'} || $options->{'process'} eq 'merge');
 
@@ -92,20 +92,20 @@ my %index_max = ( 'setup'  => 1,
 	if(!exists $options->{'process'} || $options->{'process'} eq 'estep'){
 		$threads->run($split_count, 'caveman_estep', $options);
 	}
-	
+
 	#Now we have all the results... merge all the split results files into one for each type.
 	$options->{'out_file'} = File::Spec->catfile($options->{'outdir'},$options->{'tumour_name'}."_vs_".$options->{'normal_name'}) if(!exists $options->{'process'} || $options->{'process'} eq 'merge_results');
-	if(!exists $options->{'process'} || $options->{'process'} eq 'merge_results'){	
+	if(!exists $options->{'process'} || $options->{'process'} eq 'merge_results'){
 		Sanger::CGP::Caveman::Implement::caveman_merge_results($options);
 	  #finally cleanup after ourselves by removing the temporary output folder, split files etc.
-  	cleanup($options); 
-  } 
+  	cleanup($options);
+  }
 }
 
 sub cleanup{
 	my $options = shift;
 	#Get the splitFiles.* and remove them
-	
+
 	unlink glob $options->{'subvcf'};
 	unlink glob $options->{'snpvcf'};
 	unlink glob $options->{'noanalysisbed'};
@@ -119,7 +119,7 @@ sub cleanup{
 
 sub setup {
   my %opts;
-  GetOptions( 	
+  GetOptions(
   				'h|help' => \$opts{'h'},
 					'm|man' => \$opts{'m'},
 					'r|reference=s' => \$opts{'reference'},
@@ -150,7 +150,7 @@ sub setup {
   #check the reference is the fasta fai file.
   pod2usage(-msg  => "\nERROR: reference option (-r) does not appear to be a fasta index file.\n", -verbose => 2,  -output => \*STDERR) unless($opts{'reference'} =~ m/\.fai$/);
 
-  #Check all files and dirs are readable and exist.  
+  #Check all files and dirs are readable and exist.
   PCAP::Cli::file_for_reading('reference',$opts{'reference'});
   PCAP::Cli::file_for_reading('tumour-bam',$opts{'tumbam'});
   PCAP::Cli::file_for_reading('normal-bam',$opts{'normbam'});
@@ -158,12 +158,12 @@ sub setup {
   my $tumidx = $opts{'tumbam'}.".bai";
   my $normidx = $opts{'normbam'}.".bai";
   PCAP::Cli::file_for_reading('tumour-bai',$tumidx);
-  PCAP::Cli::file_for_reading('normal-bai',$normidx);  
+  PCAP::Cli::file_for_reading('normal-bai',$normidx);
   PCAP::Cli::file_for_reading('ignore-file',$opts{'ignore'});
   PCAP::Cli::file_for_reading('tum-cn-file',$opts{'tumcn'});
   PCAP::Cli::file_for_reading('norm-cn-file',$opts{'normcn'});
   PCAP::Cli::out_dir_check('outdir', $opts{'outdir'});
-  
+
   delete $opts{'process'} unless(defined $opts{'process'});
   delete $opts{'index'} unless(defined $opts{'index'});
 
@@ -172,7 +172,7 @@ sub setup {
   $opts{'subvcf'} = File::Spec->catfile($opts{'outdir'},"results/*/*.muts.vcf");
   $opts{'snpvcf'} = File::Spec->catfile($opts{'outdir'},"results/*/*.snps.vcf");
 	#bed concat no_analysis
-  $opts{'noanalysisbed'} = File::Spec->catfile($opts{'outdir'},"results/*/*.no_analysis.bed");	
+  $opts{'noanalysisbed'} = File::Spec->catfile($opts{'outdir'},"results/*/*.no_analysis.bed");
 
 	if(exists $opts{'process'}) {
     PCAP::Cli::valid_process('process', $opts{'process'}, \@VALID_PROCESS);
@@ -200,19 +200,19 @@ sub setup {
 	$opts{'threads'} = 1 unless(defined $opts{'threads'});
 
 	delete $opts{'normcont'} unless(defined $opts{'normcont'});
-  
+
 	#Create the results directory in the output directory given.
 	my $tmpdir = File::Spec->catdir($opts{'outdir'}, 'results');
-	make_path($tmpdir) unless(-d $tmpdir); 
-	#directory to store progress reports 
+	make_path($tmpdir) unless(-d $tmpdir);
+	#directory to store progress reports
 	my $progress = File::Spec->catdir($tmpdir, 'progress');
    make_path($progress) unless(-d $progress);
 	#Directory to store run logs.
 	my $logs = File::Spec->catdir($opts{'outdir'}, 'logs');
    make_path($logs) unless(-d $logs);
-   
-  
-	return \%opts; 
+
+
+	return \%opts;
 }
 
 __END__
@@ -235,18 +235,18 @@ caveman.pl [options]
     -normal-cn         -nc  Path to normal copy number file
     -species           -s   Species name for (output in VCF)
     -species-assembly  -sa  Species assembly for (output in VCF)
-    
+
    Optional parameters:
     -normal-contamination  -k   Normal contamination value (default 0.1)
     -threads               -t   Number of threads allowed on this machine (default 1)
-    
+
    Targeted processing (further detail under OPTIONS):
     -process   -p   Only process this step then exit, optionally set -index
     -index     -i   Optionally restrict '-p' to single job
 
 	Other:
     -help     -h   Brief help message.
-    -man      -m   Full documentation.				
+    -man      -m   Full documentation.
 
 =head1 OPTIONS
 
@@ -290,6 +290,14 @@ Species name for (output in VCF) e.g HUMAN
 =item B<-species-assembly>
 
 Species assembly for (output in VCF) e.g. 37
+
+=item B<-process>
+
+Used to restrict to a single process. Valid processes are [setup|split|mstep|merge|estep|merge_results]. Use in conjunction with -index to restrict to a single job in a process.
+
+=item B<-index>
+
+Use in conjunction with -process to restrict to a single job index in a process.
 
 =item B<-help>
 
