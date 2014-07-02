@@ -38,8 +38,28 @@ subtest 'Initialisation checks' => sub {
 };
 
 subtest 'Line count checks' => sub {
-	is($LINES_PER_FQ,Sanger::CGP::Caveman::Implement::file_line_count($good_fq),'Line count correct');
-	isnt($LINES_PER_FQ, Sanger::CGP::Caveman::Implement::file_line_count($bad_fq),'Line count correct (2)');
+	is(Sanger::CGP::Caveman::Implement::file_line_count($good_fq),$LINES_PER_FQ,'Line count correct');
+	isnt(Sanger::CGP::Caveman::Implement::file_line_count($bad_fq),$LINES_PER_FQ,'Line count correct (2)');
+};
+
+subtest 'Indicies limits' => sub {
+  my $options = {'splitList' => $good_fq};
+  my @indicies = Sanger::CGP::Caveman::Implement::limited_xstep_indicies($options, 1);
+  is(scalar @indicies, 1, 'No limit, single value');
+  is($indicies[0], 1, 'No limit, single value=1');
+  $options->{'limit'} = 4;
+  @indicies = Sanger::CGP::Caveman::Implement::limited_xstep_indicies($options, 1);
+  is(scalar @indicies, 1, 'Limit matches max jobs, single value');
+  is($indicies[0], 1, 'Limit matches max jobs, single value=1');
+  $options->{'limit'} = 2;
+  @indicies = Sanger::CGP::Caveman::Implement::limited_xstep_indicies($options, 1);
+  is(scalar @indicies, 2, 'Limit = max jobs/2, 2 values (index_in=1)');
+  is($indicies[0], 1, 'Limit = max jobs/2, value[0]=1 (index_in=1)');
+  is($indicies[1], 3, 'Limit = max jobs/2, value[1]=3 (index_in=1)');
+  @indicies = Sanger::CGP::Caveman::Implement::limited_xstep_indicies($options, 2);
+  is(scalar @indicies, 2, 'Limit = max jobs/2, 2 values (index_in=2)');
+  is($indicies[0], 2, 'Limit = max jobs/2, value[0]=2 (index_in=2)');
+  is($indicies[1], 4, 'Limit = max jobs/2, value[1]=4 (index_in=2)');
 };
 
 done_testing();
