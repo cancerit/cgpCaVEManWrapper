@@ -48,7 +48,8 @@ my %index_max = ( 'setup'  => 1,
 									'mstep'  => -1,
 									'merge'  => 1,
 									'estep'  => -1,
-									'merge_results'   => 1,);
+									'merge_results'   => 1,
+									'split_concat' => -1);
 
 {
 	my $options = setup();
