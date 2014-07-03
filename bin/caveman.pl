@@ -74,8 +74,11 @@ my %index_max = ( 'setup'  => 1,
 		$options->{'out_file'} = $options->{'splitList'};
 		my $contig_count = Sanger::CGP::Caveman::Implement::file_line_count($options->{'reference'});
 		$threads->run($contig_count, 'caveman_split', $options);
-		$options->{'target_files'} = $options->{'splitList'}.".*";
-		Sanger::CGP::Caveman::Implement::concat($options);
+	}
+
+  if(!exists $options->{'process'} || $options->{'process'} eq 'split_concat'){
+    $options->{'target_files'} = $options->{'splitList'}.".*";
+	  Sanger::CGP::Caveman::Implement::concat($options);
 	}
 
 	my $split_count = Sanger::CGP::Caveman::Implement::file_line_count($options->{'splitList'}) if(!exists $options->{'process'} || first { $options->{'process'} eq $_ } ('mstep', 'estep'));
@@ -94,8 +97,8 @@ my %index_max = ( 'setup'  => 1,
 	}
 
 	#Now we have all the results... merge all the split results files into one for each type.
-	$options->{'out_file'} = File::Spec->catfile($options->{'outdir'},$options->{'tumour_name'}."_vs_".$options->{'normal_name'}) if(!exists $options->{'process'} || $options->{'process'} eq 'merge_results');
 	if(!exists $options->{'process'} || $options->{'process'} eq 'merge_results'){
+	  $options->{'out_file'} = File::Spec->catfile($options->{'outdir'},$options->{'tumour_name'}."_vs_".$options->{'normal_name'});
 		Sanger::CGP::Caveman::Implement::caveman_merge_results($options);
 	  #finally cleanup after ourselves by removing the temporary output folder, split files etc.
   	cleanup($options);
@@ -104,12 +107,6 @@ my %index_max = ( 'setup'  => 1,
 
 sub cleanup{
 	my $options = shift;
-	#Get the splitFiles.* and remove them
-
-	unlink glob $options->{'subvcf'};
-	unlink glob $options->{'snpvcf'};
-	unlink glob $options->{'noanalysisbed'};
-	unlink glob $options->{'splitList'}.'.*';
   remove_tree (File::Spec->catdir($options->{'outdir'}, 'results'));
   remove_tree (File::Spec->catdir($options->{'outdir'}, 'logs'));
   remove_tree (File::Spec->catdir($options->{'outdir'}, 'progress'));
@@ -181,9 +178,10 @@ sub setup {
       my $max_idx=0;
       if($max==-1){
       	$max_idx = Sanger::CGP::Caveman::Implement::valid_index(\%opts);
+      	$max = $max_idx;
       }
 
-      die "ERROR: based on reference and exclude option index must be between 1 and $max_idx\n" if($opts{'index'} < 1 || $opts{'index'} > $max);
+      die "ERROR: based on reference and exclude option index (".$opts{'index'}.") must be between 1 and $max_idx ($max)\n" if($opts{'index'} < 1 || $opts{'index'} > $max);
       PCAP::Cli::opt_requires_opts('index', \%opts, ['process']);
 
       die "No max has been defined for this process type\n" if($max == 0);
@@ -293,7 +291,7 @@ Species assembly for (output in VCF) e.g. 37
 
 =item B<-process>
 
-Used to restrict to a single process. Valid processes are [setup|split|mstep|merge|estep|merge_results]. Use in conjunction with -index to restrict to a single job in a process.
+Used to restrict to a single process. Valid processes are [setup|split|split_concat|mstep|merge|estep|merge_results]. Use in conjunction with -index to restrict to a single job in a process.
 
 =item B<-index>
 
