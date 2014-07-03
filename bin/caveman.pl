@@ -178,8 +178,8 @@ sub setup {
     if(exists $opts{'index'}) {
       my $max = $index_max{$opts{'process'}};
       if($max==-1){
-        if(exists $options->{'limit'}) {
-          $max = $options->{'limit'}
+        if(exists $opts{'limit'}) {
+          $max = $opts{'limit'};
         }
         else {
       	  $max = Sanger::CGP::Caveman::Implement::valid_index(\%opts);
