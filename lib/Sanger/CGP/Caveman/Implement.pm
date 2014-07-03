@@ -2,21 +2,21 @@ package Sanger::CGP::Caveman::Implement;
 
 ##########LICENCE##########
 #  Copyright (c) 2014 Genome Research Ltd.
-#  
+#
 #  Author: David Jones <cgpit@sanger.ac.uk>
-# 
+#
 #  This file is part of cavemanWrapper.
-# 
+#
 #  cavemanWrapper is free software: you can redistribute it and/or modify it under
 #  the terms of the GNU Affero General Public License as published by the Free
 #  Software Foundation; either version 3 of the License, or (at your option) any
 #  later version.
-# 
+#
 #  This program is distributed in the hope that it will be useful, but WITHOUT
 #  ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 #  FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
 #  details.
-# 
+#
 #  You should have received a copy of the GNU Affero General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 ##########LICENCE##########
@@ -123,42 +123,57 @@ sub caveman_merge{
 
 sub caveman_mstep{
 	# uncoverable subroutine
-	my ($index,$options) = @_;
-	return 1 if(exists $options->{'index'} && $index != $options->{'index'});
+	my ($index_in,$options) = @_;
+
+	# first handle the easy bit, skip if limit not set
+	return 1 if(!exists $options->{'limit'} && exists $options->{'index'} && $index_in != $options->{'index'});
+
+	my @indicies = limited_xstep_indicies($options, $index_in);
+
 	my $tmp = $options->{'outdir'};
-	return 1 if PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'), 'caveman_mstep', $index);
+	for my $index(@indicies) {
+    next if PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'), 'caveman_mstep', $index);
 
-	my $command = _which('caveman') || die "Unable to find 'caveman' in path";
+    my $command = _which('caveman') || die "Unable to find 'caveman' in path";
 
-	$command .= sprintf($CAVEMAN_MSTEP,
-									$index);
+    $command .= sprintf($CAVEMAN_MSTEP,
+                    $index);
 
-	PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $command, $index);
-  	return PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), 'caveman_mstep', $index);
+    PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $command, $index);
+    PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), 'caveman_mstep', $index);
+  }
+  return 1;
 }
 
 sub caveman_estep{
 	# uncoverable subroutine
-	my ($index,$options) = @_;
+	my ($index_in,$options) = @_;
 
-	return 1 if(exists $options->{'index'} && $index != $options->{'index'});
+	# first handle the easy bit, skip if limit not set
+	return 1 if(!exists $options->{'limit'} && exists $options->{'index'} && $index_in != $options->{'index'});
+
+	my @indicies = limited_xstep_indicies($options, $index_in);
+
 	my $tmp = $options->{'outdir'};
-	return 1 if PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'), 'caveman_estep', $index);
+	for my $index(@indicies) {
+    next if PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'), 'caveman_estep', $index);
 
-	my $command = _which('caveman') || die "Unable to find 'caveman' in path";
+    my $command = _which('caveman') || die "Unable to find 'caveman' in path";
 
-	$command .= sprintf($CAVEMAN_ESTEP,
-									$index,
-									$options->{'normcn'},
-									$options->{'tumcn'},
-									$options->{'normcont'},
-									$tmp.'/covs_arr',
-									$tmp.'/probs_arr',
-									$options->{'species-assembly'},
-									$options->{'species'},);
+    $command .= sprintf($CAVEMAN_ESTEP,
+                    $index,
+                    $options->{'normcn'},
+                    $options->{'tumcn'},
+                    $options->{'normcont'},
+                    $tmp.'/covs_arr',
+                    $tmp.'/probs_arr',
+                    $options->{'species-assembly'},
+                    $options->{'species'},);
 
-	PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $command, $index);
-  	return PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), 'caveman_estep', $index);
+    PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $command, $index);
+    PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), 'caveman_estep', $index);
+  }
+  return 1;
 }
 
 sub caveman_merge_results {
@@ -183,6 +198,24 @@ sub caveman_merge_results {
 	PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), 'merge_no_analysis', 0);
 	return 1;
 
+}
+
+sub limited_xstep_indicies {
+  my ($options, $index_in) = @_;
+  my @indicies;
+  if(exists $options->{'limit'}) {
+	  my $split_count = file_line_count($options->{'splitList'});
+    # main script checks index is not greater than limit or < 1
+	  my $base = $index_in;
+	  while($base <= $split_count) {
+	    push @indicies, $base;
+	    $base += $options->{'limit'};
+	  }
+	}
+	else {
+	  push @indicies, $index_in;
+	}
+	return @indicies;
 }
 
 sub concat {
