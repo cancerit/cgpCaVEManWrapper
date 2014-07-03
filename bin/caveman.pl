@@ -132,6 +132,7 @@ sub setup {
 					'sa|species-assembly=s' => \$opts{'species-assembly'},
 					'p|process=s' => \$opts{'process'},
 					'i|index=i' => \$opts{'index'},
+					'l|limit=i' => \$opts{'limit'},
   ) or pod2usage(2);
 
   pod2usage(-message => PCAP::license, -verbose => 2) if(defined $opts{'h'});
@@ -163,6 +164,7 @@ sub setup {
 
   delete $opts{'process'} unless(defined $opts{'process'});
   delete $opts{'index'} unless(defined $opts{'index'});
+  delete $opts{'limit'} unless(defined $opts{'limit'});
 
 	$opts{'splitList'} = File::Spec->catfile($opts{'outdir'},"splitList");
 	#vcf concat subs & snps
@@ -175,13 +177,16 @@ sub setup {
     PCAP::Cli::valid_process('process', $opts{'process'}, \@VALID_PROCESS);
     if(exists $opts{'index'}) {
       my $max = $index_max{$opts{'process'}};
-      my $max_idx=0;
       if($max==-1){
-      	$max_idx = Sanger::CGP::Caveman::Implement::valid_index(\%opts);
-      	$max = $max_idx;
+        if(exists $options->{'limit'}) {
+          $max = $options->{'limit'}
+        }
+        else {
+      	  $max = Sanger::CGP::Caveman::Implement::valid_index(\%opts);
+      	}
       }
 
-      die "ERROR: based on reference and exclude option index (".$opts{'index'}.") must be between 1 and $max_idx ($max)\n" if($opts{'index'} < 1 || $opts{'index'} > $max);
+      die "ERROR: based on reference and exclude option index must be between 1 and $max\n" if($opts{'index'} < 1 || $opts{'index'} > $max);
       PCAP::Cli::opt_requires_opts('index', \%opts, ['process']);
 
       die "No max has been defined for this process type\n" if($max == 0);
@@ -237,6 +242,7 @@ caveman.pl [options]
    Optional parameters:
     -normal-contamination  -k   Normal contamination value (default 0.1)
     -threads               -t   Number of threads allowed on this machine (default 1)
+    -limit                 -l   Limit the number of jobs required for m/estep (default undef)
 
    Targeted processing (further detail under OPTIONS):
     -process   -p   Only process this step then exit, optionally set -index
