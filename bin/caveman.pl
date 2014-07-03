@@ -42,7 +42,7 @@ use Const::Fast qw(const);
 use PCAP::Cli;
 use Sanger::CGP::Caveman::Implement;
 
-const my @VALID_PROCESS => qw(setup split mstep merge estep merge_results);
+const my @VALID_PROCESS => qw(setup split split_concat mstep merge estep merge_results);
 my %index_max = ( 'setup'  => 1,
 									'split'  => -1,
 									'mstep'  => -1,
