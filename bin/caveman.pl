@@ -43,6 +43,11 @@ use PCAP::Cli;
 use Sanger::CGP::Caveman::Implement;
 
 const my @VALID_PROCESS => qw(setup split split_concat mstep merge estep merge_results);
+const my $CAVEMAN_CONFIG => 'caveman.cfg.ini';
+const my $CAVEMAN_ALG_BEAN => 'alg_bean';
+const my $CAVEMAN_PROB_ARR => 'prob_arr';
+const my $CAVEMAN_COV_ARR => 'cov_arr';
+
 my %index_max = ( 'setup'  => 1,
 									'split'  => -1,
 									'mstep'  => -1,
@@ -78,6 +83,7 @@ my %index_max = ( 'setup'  => 1,
 	}
 
   if(!exists $options->{'process'} || $options->{'process'} eq 'split_concat'){
+    $options->{'out_file'} = $options->{'splitList'};
     $options->{'target_files'} = $options->{'splitList'}.".*";
 	  Sanger::CGP::Caveman::Implement::concat($options);
 	}
@@ -206,16 +212,26 @@ sub setup {
 	delete $opts{'normcont'} unless(defined $opts{'normcont'});
 
 	#Create the results directory in the output directory given.
-	my $tmpdir = File::Spec->catdir($opts{'outdir'}, 'results');
+	my $tmpdir = File::Spec->catdir($opts{'outdir'}, 'tmpCaveman');
 	make_path($tmpdir) unless(-d $tmpdir);
+	$opts{'tmp'} = $tmpdir;
+	my $resultsdir = File::Spec->catdir($opts{'tmp'}, 'results');
+	make_path($resultsdir) unless(-d $resultsdir);
 	#directory to store progress reports
-	my $progress = File::Spec->catdir($tmpdir, 'progress');
+	my $progress = File::Spec->catdir($opts{'tmp'}, 'tmp');
    make_path($progress) unless(-d $progress);
 	#Directory to store run logs.
-	my $logs = File::Spec->catdir($opts{'outdir'}, 'logs');
-   make_path($logs) unless(-d $logs);
-
-
+	my $logs = File::Spec->catdir($opts{'outdir'}, 'tmp');
+  make_path($logs) unless(-d $logs);
+  $opts{'logs'} = $logs;
+  my $config_file = File::Spec->catfile($opts{'tmp'},$CAVEMAN_CONFIG);
+  $opts{'cave_cfg'} = $config_file;
+  my $alg_bean = File::Spec->catfile($opts{'tmp'},$CAVEMAN_ALG_BEAN);
+  $opts{'cave_alg'} = $alg_bean;
+  my $prob_arr = File::Spec->catfile($opts{'tmp'},$CAVEMAN_PROB_ARR);
+  $opts{'cave_parr'} = $alg_bean;
+  my $cov_arr = File::Spec->catfile($opts{'tmp'},$CAVEMAN_COV_ARR);
+  $opts{'cave_carr'} = $alg_bean;
 	return \%opts;
 }
 
