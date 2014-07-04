@@ -173,13 +173,6 @@ sub setup {
   delete $opts{'index'} unless(defined $opts{'index'});
   delete $opts{'limit'} unless(defined $opts{'limit'});
 
-	$opts{'splitList'} = File::Spec->catfile($opts{'outdir'},"splitList");
-	#vcf concat subs & snps
-  $opts{'subvcf'} = File::Spec->catfile($opts{'outdir'},"results/*/*.muts.vcf");
-  $opts{'snpvcf'} = File::Spec->catfile($opts{'outdir'},"results/*/*.snps.vcf");
-	#bed concat no_analysis
-  $opts{'noanalysisbed'} = File::Spec->catfile($opts{'outdir'},"results/*/*.no_analysis.bed");
-
 	if(exists $opts{'process'}) {
     PCAP::Cli::valid_process('process', $opts{'process'}, \@VALID_PROCESS);
     if(exists $opts{'index'}) {
@@ -232,6 +225,15 @@ sub setup {
   $opts{'cave_parr'} = $alg_bean;
   my $cov_arr = File::Spec->catfile($opts{'tmp'},$CAVEMAN_COV_ARR);
   $opts{'cave_carr'} = $alg_bean;
+
+  $opts{'splitList'} = File::Spec->catfile($opts{'tmp'},"splitList");
+	#vcf concat subs & snps
+  $opts{'subvcf'} = File::Spec->catfile($opts{'tmp'},"results/*/*.muts.vcf");
+  $opts{'snpvcf'} = File::Spec->catfile($opts{'tmp'},"results/*/*.snps.vcf");
+	#bed concat no_analysis
+  $opts{'noanalysisbed'} = File::Spec->catfile($opts{'tmp'},"results/*/*.no_analysis.bed");
+
+
 	return \%opts;
 }
 
