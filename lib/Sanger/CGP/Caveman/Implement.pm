@@ -177,7 +177,7 @@ sub caveman_estep{
                     $options->{'tumcn'},
                     $options->{'normcont'},
                     $cov_arr,
-                    $prob_arr',
+                    $prob_arr,
                     $options->{'species-assembly'},
                     $options->{'species'},
                     $config,);
