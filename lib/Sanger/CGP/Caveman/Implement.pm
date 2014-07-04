@@ -39,7 +39,7 @@ const my $CAVEMAN_SETUP => q{ setup -t %s -n %s -r %s -g %s -l %s -f %s -c %s -a
 const my $CAVEMAN_SPLIT => q{ split -i %d -f %s};
 const my $CAVEMAN_MSTEP => q{ mstep -i %d -f %s};
 const my $CAVEMAN_MERGE => q{ merge -c %s -p %s -f %s };
-const my $CAVEMAN_ESTEP => q{ estep -i %d -e %s -j %s -k %f -g %s -o %s -v %s -w %s -f %s -g %s -o %s};
+const my $CAVEMAN_ESTEP => q{ estep -i %d -e %s -j %s -k %f -g %s -o %s -v %s -w %s -f %s};
 const my $MERGE_CAVEMAN_RESULTS => q{ mergeCavemanResults -o %s %s};
 
 sub prepare {
@@ -176,13 +176,11 @@ sub caveman_estep{
                     $options->{'normcn'},
                     $options->{'tumcn'},
                     $options->{'normcont'},
-                    $tmp.'/covs_arr',
-                    $tmp.'/probs_arr',
+                    $cov_arr,
+                    $prob_arr',
                     $options->{'species-assembly'},
                     $options->{'species'},
-                    $config,
-                    $cov_arr,
-                    $prob_arr);
+                    $config,);
 
     PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $command, $index);
     PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), 'caveman_estep', $index);
