@@ -35,7 +35,7 @@ our $VERSION = Sanger::CGP::Caveman->VERSION;
 use PCAP::Threaded;
 use PCAP::Bam;
 
-const my $CAVEMAN_SETUP => q{ setup -t %s -n %s -r %s -g %s -l %s -f %s -c % -a %};
+const my $CAVEMAN_SETUP => q{ setup -t %s -n %s -r %s -g %s -l %s -f %s -c %s -a %s};
 const my $CAVEMAN_SPLIT => q{ split -i %d -f %s};
 const my $CAVEMAN_MSTEP => q{ mstep -i %d -f %s};
 const my $CAVEMAN_MERGE => q{ merge -c %s -p %s -f %s };
