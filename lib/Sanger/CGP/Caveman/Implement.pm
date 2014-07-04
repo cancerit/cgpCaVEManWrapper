@@ -35,11 +35,11 @@ our $VERSION = Sanger::CGP::Caveman->VERSION;
 use PCAP::Threaded;
 use PCAP::Bam;
 
-const my $CAVEMAN_SETUP => q{ setup -t %s -n %s -r %s -g %s -l %s -f %s};
-const my $CAVEMAN_SPLIT => q{ split -i %d};
-const my $CAVEMAN_MSTEP => q{ mstep -i %d};
-const my $CAVEMAN_MERGE => q{ merge -c %s -p %s};
-const my $CAVEMAN_ESTEP => q{ estep -i %d -e %s -j %s -k %f -g %s -o %s -v %s -w %s};
+const my $CAVEMAN_SETUP => q{ setup -t %s -n %s -r %s -g %s -l %s -f %s -c % -a %};
+const my $CAVEMAN_SPLIT => q{ split -i %d -f %s};
+const my $CAVEMAN_MSTEP => q{ mstep -i %d -f %s};
+const my $CAVEMAN_MERGE => q{ merge -c %s -p %s -f %s };
+const my $CAVEMAN_ESTEP => q{ estep -i %d -e %s -j %s -k %f -g %s -o %s -v %s -w %s -f %s -g %s -o %s};
 const my $MERGE_CAVEMAN_RESULTS => q{ mergeCavemanResults -o %s %s};
 
 sub prepare {
@@ -67,14 +67,17 @@ sub file_line_count {
 sub caveman_setup {
 	# uncoverable subroutine
 	my $options = shift;
-	my $tmp = $options->{'outdir'};
+	my $tmp = $options->{'tmp'};
 	return 1 if PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'), 0);
 	my $ref = $options->{'reference'};
 	my $tumbam = $options->{'tumbam'};
 	my $normbam = $options->{'normbam'};
 	my $ignore = $options->{'ignore'};
-	my $split_list_oc = $options->{'outdir'}."/splitList";
-	my $results_loc = $options->{'outdir'}."/results";
+	my $split_list_oc = $tmp."/splitList";
+	my $results_loc = $tmp."/results";
+	my $config = $options->{'cave_cfg'};
+	my $alg_bean = $options->{'cave_alg'};
+
 
 	my $command = _which('caveman') || die "Unable to find 'caveman' in path";
 
@@ -84,7 +87,9 @@ sub caveman_setup {
 								$ref,
 								$ignore,
 								$split_list_oc,
-								$results_loc);
+								$results_loc,
+								$config,
+								$alg_bean);
 
 	PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $command, 0);
 
@@ -96,12 +101,12 @@ sub caveman_split {
 	my ($index,$options) = @_;
 
 	return 1 if(exists $options->{'index'} && $index != $options->{'index'});
-	my $tmp = $options->{'outdir'};
-
+	my $tmp = $options->{'tmp'};
+  my $config = $options->{'cave_cfg'};
 	return 1 if PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'), 'caveman_split', $index);
 
 	my $command = _which('caveman') || die "Unable to find 'caveman' in path";
-	$command .= sprintf($CAVEMAN_SPLIT,$index);
+	$command .= sprintf($CAVEMAN_SPLIT,$index,$config);
 
 	PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $command, $index);
   	return PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), 'caveman_split', $index);
@@ -112,10 +117,13 @@ sub caveman_merge{
 	my $options = shift;
 
 	my $command = _which('caveman') || die "Unable to find 'caveman' in path";
-	my $tmp = $options->{'outdir'};
+	my $tmp = $options->{'tmp'};
+	my $config = $options->{'cave_cfg'};
+	my $prob_arr = $options->{'cave_parr'};
+	my $cov_arr = $options->{'cave_carr'};
 	return 1 if PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'), 'caveman_merge', 0);
 
-	$command .= sprintf($CAVEMAN_MERGE, $tmp.'/covs_arr', $tmp.'/probs_arr');
+	$command .= sprintf($CAVEMAN_MERGE, $cov_arr, $prob_arr,$config);
 	PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $command, 0);
 
 	return PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), 'caveman_merge', 0);
@@ -129,15 +137,16 @@ sub caveman_mstep{
 	return 1 if(!exists $options->{'limit'} && exists $options->{'index'} && $index_in != $options->{'index'});
 
 	my @indicies = limited_xstep_indicies($options, $index_in);
-
-	my $tmp = $options->{'outdir'};
+  my $config = $options->{'cave_cfg'};
+	my $tmp = $options->{'tmp'};
 	for my $index(@indicies) {
     next if PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'), 'caveman_mstep', $index);
 
     my $command = _which('caveman') || die "Unable to find 'caveman' in path";
 
     $command .= sprintf($CAVEMAN_MSTEP,
-                    $index);
+                    $index,
+                    $config);
 
     PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $command, $index);
     PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), 'caveman_mstep', $index);
@@ -153,8 +162,10 @@ sub caveman_estep{
 	return 1 if(!exists $options->{'limit'} && exists $options->{'index'} && $index_in != $options->{'index'});
 
 	my @indicies = limited_xstep_indicies($options, $index_in);
-
-	my $tmp = $options->{'outdir'};
+  my $config = $options->{'cave_cfg'};
+	my $tmp = $options->{'tmp'};
+	my $prob_arr = $options->{'cave_parr'};
+	my $cov_arr = $options->{'cave_carr'};
 	for my $index(@indicies) {
     next if PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'), 'caveman_estep', $index);
 
@@ -168,7 +179,10 @@ sub caveman_estep{
                     $tmp.'/covs_arr',
                     $tmp.'/probs_arr',
                     $options->{'species-assembly'},
-                    $options->{'species'},);
+                    $options->{'species'},
+                    $config,
+                    $cov_arr,
+                    $prob_arr);
 
     PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $command, $index);
     PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), 'caveman_estep', $index);
@@ -179,7 +193,7 @@ sub caveman_estep{
 sub caveman_merge_results {
 	# uncoverable subroutine
 	my $options = shift;
-	my $tmp = $options->{'outdir'};
+	my $tmp = $options->{'tmp'};
 	my $out = $options->{'out_file'};
 	my $target = $options->{'subvcf'};
 	my $command = sprintf($MERGE_CAVEMAN_RESULTS,$out.".muts.vcf",$target);
@@ -221,7 +235,7 @@ sub limited_xstep_indicies {
 sub concat {
 	# uncoverable subroutine
 	my $options = shift;
-	my $tmp = $options->{'outdir'};
+	my $tmp = $options->{'tmp'};
 	my $out = $options->{'out_file'};
 	my $target = $options->{'target_files'};
 	return 1 if PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'), 'caveman_concat_split', 0);
