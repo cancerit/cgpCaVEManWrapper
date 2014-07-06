@@ -114,9 +114,19 @@ my %index_max = ( 'setup'  => 1,
 
 sub cleanup{
 	my $options = shift;
-  remove_tree (File::Spec->catdir($options->{'outdir'}, 'results'));
-  remove_tree (File::Spec->catdir($options->{'outdir'}, 'logs'));
-  remove_tree (File::Spec->catdir($options->{'outdir'}, 'progress'));
+  #Make a directory for kept results
+
+  #Move cov array
+  #Move prob array
+  #Move alg bean
+  #move concatenated muts
+  #move concatenated snps
+  #move concatenated no analysis
+  #move config file
+
+  remove_tree (File::Spec->catdir($options->{'tmp'}, 'results'));
+  remove_tree (File::Spec->catdir($options->{'tmp'}, 'logs'));
+  remove_tree (File::Spec->catdir($options->{'tmp'}, 'progress'));
 	return 0;
 }
 
@@ -202,7 +212,7 @@ sub setup {
 	# now safe to apply defaults
 	$opts{'threads'} = 1 unless(defined $opts{'threads'});
 
-	delete $opts{'normcont'} unless(defined $opts{'normcont'});
+	$opts{'normcont'} = 0.1 unless(defined $opts{'normcont'});
 
 	#Create the results directory in the output directory given.
 	my $tmpdir = File::Spec->catdir($opts{'outdir'}, 'tmpCaveman');
@@ -222,9 +232,9 @@ sub setup {
   my $alg_bean = File::Spec->catfile($opts{'tmp'},$CAVEMAN_ALG_BEAN);
   $opts{'cave_alg'} = $alg_bean;
   my $prob_arr = File::Spec->catfile($opts{'tmp'},$CAVEMAN_PROB_ARR);
-  $opts{'cave_parr'} = $alg_bean;
+  $opts{'cave_parr'} = $prob_arr;
   my $cov_arr = File::Spec->catfile($opts{'tmp'},$CAVEMAN_COV_ARR);
-  $opts{'cave_carr'} = $alg_bean;
+  $opts{'cave_carr'} = $cov_arr;
 
   $opts{'splitList'} = File::Spec->catfile($opts{'tmp'},"splitList");
 	#vcf concat subs & snps
