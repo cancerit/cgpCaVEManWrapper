@@ -38,6 +38,7 @@ use Getopt::Long;
 use Pod::Usage qw(pod2usage);
 use List::Util qw(first);
 use Const::Fast qw(const);
+use File::Copy;
 
 use PCAP::Cli;
 use Sanger::CGP::Caveman::Implement;
@@ -116,17 +117,19 @@ sub cleanup{
 	my $options = shift;
   #Make a directory for kept results
 
-  #Move cov array
-  #Move prob array
-  #Move alg bean
-  #move concatenated muts
-  #move concatenated snps
-  #move concatenated no analysis
-  #move config file
-
+  #Move cov array, prob array, alg bean, config, splitList
+  move ($options->{'cave_cfg'},File::Spec->catfile($options->{'outdir'},$CAVEMAN_CONFIG)) || die $!;
+  move ($options->{'cave_alg'},File::Spec->catfile($options->{'outdir'},$CAVEMAN_ALG_BEAN)) || die $!;
+  move ($options->{'cave_parr'},File::Spec->catfile($options->{'outdir'},$CAVEMAN_PROB_ARR)) || die $!;
+  move ($options->{'cave_carr'},File::Spec->catfile($options->{'outdir'},$CAVEMAN_COV_ARR)) || die $!;
+  move ($options->{'splitList'},File::Spec->catfile($options->{'outdir'},'splitList')) || die $!;
+  #Move logs
+  move (File::Spec->catdir($options->{'tmp'}, 'logs'), File::Spec->catdir($options->{'outdir'},'logs')) || die $!;
   remove_tree (File::Spec->catdir($options->{'tmp'}, 'results'));
   remove_tree (File::Spec->catdir($options->{'tmp'}, 'logs'));
   remove_tree (File::Spec->catdir($options->{'tmp'}, 'progress'));
+  remove_tree ($options->{'tmp'});
+
 	return 0;
 }
 
