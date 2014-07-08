@@ -135,7 +135,7 @@ sub caveman_mstep{
 	my ($index_in,$options) = @_;
 
 	# first handle the easy bit, skip if limit not set
-	return 1 if(!exists $options->{'limit'} && exists $options->{'index'} && $index_in != $options->{'index'});
+	return 1 if(exists $options->{'index'} && $index_in != $options->{'index'});
 
 	my @indicies = limited_xstep_indicies($options, $index_in);
   my $config = $options->{'cave_cfg'};
@@ -160,7 +160,7 @@ sub caveman_estep{
 	my ($index_in,$options) = @_;
 
 	# first handle the easy bit, skip if limit not set
-	return 1 if(!exists $options->{'limit'} && exists $options->{'index'} && $index_in != $options->{'index'});
+	return 1 if(exists $options->{'index'} && $index_in != $options->{'index'});
 
 	my @indicies = limited_xstep_indicies($options, $index_in);
   my $config = $options->{'cave_cfg'};
