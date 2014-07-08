@@ -142,6 +142,7 @@ else
   cp caveman/bin/caveman $INST_PATH/bin/.
   cp caveman/bin/generateCavemanUMNormVCF $INST_PATH/bin/.
   cp caveman/bin/removeVCFPanelRefLines.pl $INST_PATH/bin/.
+  cp caveman/bin/mergeCavemanResults $INST_PATH/bin/.
   touch $SETUP_DIR/caveman.success
   )>>$INIT_DIR/setup.log 2>&1
 fi
