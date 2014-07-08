@@ -5,7 +5,7 @@ use ExtUtils::MakeMaker;
 WriteMakefile(
   NAME          => 'cavemanWrapper',
   VERSION_FROM  => 'lib/Sanger/CGP/Caveman.pm',
-  EXE_FILES     => [qw( bin/caveman.pl)],
+  EXE_FILES     => [qw( bin/caveman.pl bin/caveman_merge_results.pl)],
   PREREQ_PM     => {
                      'Const::Fast' => 0.014,
                      'Try::Tiny' => 0.19,
