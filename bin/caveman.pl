@@ -125,9 +125,6 @@ sub cleanup{
   move ($options->{'splitList'},File::Spec->catfile($options->{'outdir'},'splitList')) || die $!;
   #Move logs
   move (File::Spec->catdir($options->{'tmp'}, 'logs'), File::Spec->catdir($options->{'outdir'},'logs')) || die $!;
-  remove_tree (File::Spec->catdir($options->{'tmp'}, 'results'));
-  remove_tree (File::Spec->catdir($options->{'tmp'}, 'logs'));
-  remove_tree (File::Spec->catdir($options->{'tmp'}, 'progress'));
   remove_tree ($options->{'tmp'});
 
 	return 0;
