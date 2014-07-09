@@ -39,6 +39,7 @@ use Pod::Usage qw(pod2usage);
 use List::Util qw(first);
 use Const::Fast qw(const);
 use File::Copy;
+use File::Copy::Recursive qw(dirmove);
 
 use PCAP::Cli;
 use Sanger::CGP::Caveman::Implement;
@@ -127,10 +128,11 @@ sub cleanup{
   move ($options->{'splitList'},File::Spec->catfile($options->{'outdir'},'splitList'))
             || die "Error trying to move splitList '$options->{splitList}' -> '".File::Spec->catfile($options->{'outdir'},'splitList')."': $!";
   #Move logs
-  move ($options->{'logs'}, File::Spec->catdir($options->{'outdir'},'logs'))
-              || die "Error trying to move logs directory '".$options->{'logs'}."' -> '".File::Spec->catdir($options->{'outdir'},'logs')."': $!";
+  dirmove ($options->{'logs'}, File::Spec->catdir($options->{'outdir'},'logs'))
+            || die "Error trying to dircopy logs directory '".$options->{'logs'}."' -> '".File::Spec->catdir($options->{'outdir'},'logs')."': $!";
 
   remove_tree ($options->{'tmp'});
+  remove_tree ($options->{'logs'});
 
 	return 0;
 }
