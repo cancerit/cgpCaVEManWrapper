@@ -115,16 +115,21 @@ my %index_max = ( 'setup'  => 1,
 
 sub cleanup{
 	my $options = shift;
-  #Make a directory for kept results
-
   #Move cov array, prob array, alg bean, config, splitList
-  move ($options->{'cave_cfg'},File::Spec->catfile($options->{'outdir'},$CAVEMAN_CONFIG)) || die $!;
-  move ($options->{'cave_alg'},File::Spec->catfile($options->{'outdir'},$CAVEMAN_ALG_BEAN)) || die $!;
-  move ($options->{'cave_parr'},File::Spec->catfile($options->{'outdir'},$CAVEMAN_PROB_ARR)) || die $!;
-  move ($options->{'cave_carr'},File::Spec->catfile($options->{'outdir'},$CAVEMAN_COV_ARR)) || die $!;
-  move ($options->{'splitList'},File::Spec->catfile($options->{'outdir'},'splitList')) || die $!;
+  move ($options->{'cave_cfg'},File::Spec->catfile($options->{'outdir'},$CAVEMAN_CONFIG))
+            || die "Error trying to move config file '$options->{cave_cfg}' -> '".File::Spec->catfile($options->{'outdir'},$CAVEMAN_CONFIG)."': $!";
+  move ($options->{'cave_alg'},File::Spec->catfile($options->{'outdir'},$CAVEMAN_ALG_BEAN))
+            || die "Error trying to move alg_bean '$options->{cave_alg}' -> '".File::Spec->catfile($options->{'outdir'},$CAVEMAN_ALG_BEAN)."': $!";
+  move ($options->{'cave_parr'},File::Spec->catfile($options->{'outdir'},$CAVEMAN_PROB_ARR))
+            || die "Error trying to move prob_array '$options->{cave_parr}' -> '".File::Spec->catfile($options->{'outdir'},$CAVEMAN_PROB_ARR)."': $!";
+  move ($options->{'cave_carr'},File::Spec->catfile($options->{'outdir'},$CAVEMAN_COV_ARR))
+            || die "Error trying to move cov_array '$options->{cave_carr}' -> '".File::Spec->catfile($options->{'outdir'},$CAVEMAN_COV_ARR)."': $!";
+  move ($options->{'splitList'},File::Spec->catfile($options->{'outdir'},'splitList'))
+            || die "Error trying to move splitList '$options->{splitList}' -> '".File::Spec->catfile($options->{'outdir'},'splitList')."': $!";
   #Move logs
-  move (File::Spec->catdir($options->{'tmp'}, 'logs'), File::Spec->catdir($options->{'outdir'},'logs')) || die $!;
+  move ($options->{'logs'}, File::Spec->catdir($options->{'outdir'},'logs'))
+              || die "Error trying to move logs directory '".$options->{'logs'}."' -> '".File::Spec->catdir($options->{'outdir'},'logs')."': $!";
+
   remove_tree ($options->{'tmp'});
 
 	return 0;
