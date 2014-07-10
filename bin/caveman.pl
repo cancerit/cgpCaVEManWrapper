@@ -39,7 +39,6 @@ use Pod::Usage qw(pod2usage);
 use List::Util qw(first);
 use Const::Fast qw(const);
 use File::Copy;
-use File::Copy::Recursive qw(dirmove);
 
 use PCAP::Cli;
 use Sanger::CGP::Caveman::Implement;
@@ -118,22 +117,16 @@ sub cleanup{
 	my $options = shift;
   #Move cov array, prob array, alg bean, config, splitList
   move ($options->{'cave_cfg'},File::Spec->catfile($options->{'outdir'},$CAVEMAN_CONFIG))
-            || die "Error trying to move config file '$options->{cave_cfg}' -> '".File::Spec->catfile($options->{'outdir'},$CAVEMAN_CONFIG)."': $!";
+      || die "Error trying to move config file '$options->{cave_cfg}' -> '".File::Spec->catfile($options->{'outdir'},$CAVEMAN_CONFIG)."': $!";
   move ($options->{'cave_alg'},File::Spec->catfile($options->{'outdir'},$CAVEMAN_ALG_BEAN))
-            || die "Error trying to move alg_bean '$options->{cave_alg}' -> '".File::Spec->catfile($options->{'outdir'},$CAVEMAN_ALG_BEAN)."': $!";
+      || die "Error trying to move alg_bean '$options->{cave_alg}' -> '".File::Spec->catfile($options->{'outdir'},$CAVEMAN_ALG_BEAN)."': $!";
   move ($options->{'cave_parr'},File::Spec->catfile($options->{'outdir'},$CAVEMAN_PROB_ARR))
-            || die "Error trying to move prob_array '$options->{cave_parr}' -> '".File::Spec->catfile($options->{'outdir'},$CAVEMAN_PROB_ARR)."': $!";
+      || die "Error trying to move prob_array '$options->{cave_parr}' -> '".File::Spec->catfile($options->{'outdir'},$CAVEMAN_PROB_ARR)."': $!";
   move ($options->{'cave_carr'},File::Spec->catfile($options->{'outdir'},$CAVEMAN_COV_ARR))
-            || die "Error trying to move cov_array '$options->{cave_carr}' -> '".File::Spec->catfile($options->{'outdir'},$CAVEMAN_COV_ARR)."': $!";
+      || die "Error trying to move cov_array '$options->{cave_carr}' -> '".File::Spec->catfile($options->{'outdir'},$CAVEMAN_COV_ARR)."': $!";
   move ($options->{'splitList'},File::Spec->catfile($options->{'outdir'},'splitList'))
-            || die "Error trying to move splitList '$options->{splitList}' -> '".File::Spec->catfile($options->{'outdir'},'splitList')."': $!";
-  #Move logs
-  dirmove ($options->{'logs'}, File::Spec->catdir($options->{'outdir'},'logs'))
-            || die "Error trying to dircopy logs directory '".$options->{'logs'}."' -> '".File::Spec->catdir($options->{'outdir'},'logs')."': $!";
-
+      || die "Error trying to move splitList '$options->{splitList}' -> '".File::Spec->catfile($options->{'outdir'},'splitList')."': $!";
   remove_tree ($options->{'tmp'});
-  remove_tree ($options->{'logs'});
-
 	return 0;
 }
 
@@ -228,10 +221,10 @@ sub setup {
 	my $resultsdir = File::Spec->catdir($opts{'tmp'}, 'results');
 	make_path($resultsdir) unless(-d $resultsdir);
 	#directory to store progress reports
-	my $progress = File::Spec->catdir($opts{'tmp'}, 'tmp');
-   make_path($progress) unless(-d $progress);
+	my $progress = File::Spec->catdir($opts{'tmp'}, 'progress');
+  make_path($progress) unless(-d $progress);
 	#Directory to store run logs.
-	my $logs = File::Spec->catdir($opts{'outdir'}, 'tmp');
+	my $logs = File::Spec->catdir($opts{'outdir'}, 'logs');
   make_path($logs) unless(-d $logs);
   $opts{'logs'} = $logs;
   my $config_file = File::Spec->catfile($opts{'tmp'},$CAVEMAN_CONFIG);
