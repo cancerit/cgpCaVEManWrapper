@@ -126,6 +126,8 @@ sub cleanup{
       || die "Error trying to move cov_array '$options->{cave_carr}' -> '".File::Spec->catfile($options->{'outdir'},$CAVEMAN_COV_ARR)."': $!";
   move ($options->{'splitList'},File::Spec->catfile($options->{'outdir'},'splitList'))
       || die "Error trying to move splitList '$options->{splitList}' -> '".File::Spec->catfile($options->{'outdir'},'splitList')."': $!";
+  move ($options->{'logs'},File::Spec->catdir($options->{'outdir'},'logs'))
+      || die "Error trying to move logs directory '$options->{logs}' -> '".File::Spec->catdir($options->{'outdir'},'logs')."': $!";
   remove_tree ($options->{'tmp'});
 	return 0;
 }
@@ -148,6 +150,7 @@ sub setup {
 					's|species=s' => \$opts{'species'},
 					'sa|species-assembly=s' => \$opts{'species-assembly'},
 					'p|process=s' => \$opts{'process'},
+					'g|logs=s' => \$opts{'lgs'},
 					'i|index=i' => \$opts{'index'},
 					'l|limit=i' => \$opts{'limit'},
   ) or pod2usage(2);
@@ -224,9 +227,15 @@ sub setup {
 	my $progress = File::Spec->catdir($opts{'tmp'}, 'progress');
   make_path($progress) unless(-d $progress);
 	#Directory to store run logs.
-	my $logs = File::Spec->catdir($opts{'outdir'}, 'logs');
-  make_path($logs) unless(-d $logs);
-  $opts{'logs'} = $logs;
+	my $logs;
+	if($opts{'lgs'}){
+	  $logs = $opts{'lgs'};
+	}else{
+    $logs = File::Spec->catdir($opts{'outdir'}, 'logs');
+	}
+	make_path($logs) unless(-d $logs);
+	$opts{'logs'} = $logs;
+
   my $config_file = File::Spec->catfile($opts{'tmp'},$CAVEMAN_CONFIG);
   $opts{'cave_cfg'} = $config_file;
   my $alg_bean = File::Spec->catfile($opts{'tmp'},$CAVEMAN_ALG_BEAN);
@@ -260,7 +269,7 @@ caveman.pl [options]
   	Required parameters:
     -outdir            -o   Folder to output result to.
     -reference         -r   Path to reference genome index file *.fai
-	 -tumour-bam         -tb  Path to tumour bam file
+	  -tumour-bam        -tb  Path to tumour bam file
     -normal-bam        -nb  Path to normal bam file
     -ignore-file       -ig  Path to ignored regions file
     -tumour-cn         -tc  Path to tumour copy number file
@@ -272,6 +281,7 @@ caveman.pl [options]
     -normal-contamination  -k   Normal contamination value (default 0.1)
     -threads               -t   Number of threads allowed on this machine (default 1)
     -limit                 -l   Limit the number of jobs required for m/estep (default undef)
+    -logs                  -g   Location to write logs (default is ./logs)
 
    Targeted processing (further detail under OPTIONS):
     -process   -p   Only process this step then exit, optionally set -index
@@ -323,6 +333,10 @@ Species name for (output in VCF) e.g HUMAN
 =item B<-species-assembly>
 
 Species assembly for (output in VCF) e.g. 37
+
+=item B<-logs>
+
+Override default log location of outdir/logs to the given folder.
 
 =item B<-process>
 
