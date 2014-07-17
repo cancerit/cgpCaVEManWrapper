@@ -269,7 +269,7 @@ caveman.pl [options]
   	Required parameters:
     -outdir            -o   Folder to output result to.
     -reference         -r   Path to reference genome index file *.fai
-	  -tumour-bam        -tb  Path to tumour bam file
+    -tumour-bam        -tb  Path to tumour bam file
     -normal-bam        -nb  Path to normal bam file
     -ignore-file       -ig  Path to ignored regions file
     -tumour-cn         -tc  Path to tumour copy number file
