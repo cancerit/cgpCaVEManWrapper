@@ -5,9 +5,9 @@ package Sanger::CGP::Caveman::Implement;
 #
 #  Author: David Jones <cgpit@sanger.ac.uk>
 #
-#  This file is part of cavemanWrapper.
+#  This file is part of cgpCaVEManWrapper.
 #
-#  cavemanWrapper is free software: you can redistribute it and/or modify it under
+#  cgpCaVEManWrapper is free software: you can redistribute it and/or modify it under
 #  the terms of the GNU Affero General Public License as published by the Free
 #  Software Foundation; either version 3 of the License, or (at your option) any
 #  later version.
@@ -28,6 +28,7 @@ use File::Which qw(which);
 use FindBin qw($Bin);
 use autodie qw(:all);
 use Const::Fast qw(const);
+use File::Basename;
 
 use Sanger::CGP::Caveman;
 our $VERSION = Sanger::CGP::Caveman->VERSION;
@@ -40,7 +41,12 @@ const my $CAVEMAN_SPLIT => q{ split -i %d -f %s};
 const my $CAVEMAN_MSTEP => q{ mstep -i %d -f %s};
 const my $CAVEMAN_MERGE => q{ merge -c %s -p %s -f %s};
 const my $CAVEMAN_ESTEP => q{ estep -i %d -e %s -j %s -k %f -g %s -o %s -v %s -w %s -f %s};
+const my $CAVEMAN_FLAG => q{ -i %s -o %s -s %s -t %s -m %s -n %s -b %s -g %s -umv %s -ref %s};
 const my $MERGE_CAVEMAN_RESULTS => q{ mergeCavemanResults -o %s %s};
+const my $CAVEMAN_VCF_IDS => q{ -i %s -o %s};
+
+const my $FLAG_SCRIPT => q{cgpFlagCaVEMan.pl};
+const my $IDS_SCRIPT => q{cgpAppendIdsToVcf.pl};
 
 sub prepare {
   my $options = shift;
@@ -210,17 +216,72 @@ sub caveman_merge_results {
 								unless (PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'), 'merge_no_analysis', 0));
 	PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), 'merge_no_analysis', 0);
 	return 1;
+}
 
+sub caveman_add_vcf_ids{
+	# uncoverable subroutine
+	my $options = shift;
+	my $tmp = $options->{'tmp'};
+	my $raw = $options->{'raw_file'};
+	my $ids = $options->{'ids_file'};
+
+	return 1 if PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'), 'caveman_add_vcf_ids', 0);
+
+	my $command = _which($IDS_SCRIPT) ||  die "Unable to find '$IDS_SCRIPT' in path";
+	$command .= sprintf($CAVEMAN_VCF_IDS,
+														$raw,
+														$ids);
+
+	PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $command, 0);
+	return PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), 'caveman_add_vcf_ids', 0);
+}
+
+sub caveman_flag{
+	# uncoverable subroutine
+	my $options = shift;
+	my $tmp = $options->{'tmp'};
+	my $for_flagging = $options->{'for_flagging'};
+	my $flagged = $options->{'flagged'};
+	my $tumbam = $options->{'tumbam'};
+	my $normbam = $options->{'normbam'};
+	my $ref = $options->{'reference'};
+
+	return 1 if PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'), 'caveman_flag', 0);
+
+	my $command = _which($FLAG_SCRIPT) || die "Unable to find '$FLAG_SCRIPT' in path";
+	$command .= sprintf($CAVEMAN_FLAG,
+							$for_flagging,
+							$flagged,
+							$options->{'species'},
+							$tumbam,
+							$normbam,
+							$options->{'flag-bed'},
+							$options->{'germindel'},
+							$options->{'unmatchedvcf'},
+							$ref);
+
+	PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $command, 0);
+	return PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), 'caveman_flag', 0);
+}
+
+sub limited_flag_indicies {
+  my ($options, $index_in) = @_;
+  return limited_indices($options, $index_in, $options->{'vcf_split_count'});
 }
 
 sub limited_xstep_indicies {
   my ($options, $index_in) = @_;
+	my $split_count = file_line_count($options->{'splitList'});
+	return limited_indices($options, $index_in, $split_count);
+}
+
+sub limited_indices {
+	my ($options, $index_in, $count) = @_;
   my @indicies;
   if(exists $options->{'limit'}) {
-	  my $split_count = file_line_count($options->{'splitList'});
     # main script checks index is not greater than limit or < 1
 	  my $base = $index_in;
-	  while($base <= $split_count) {
+	  while($base <= $count) {
 	    push @indicies, $base;
 	    $base += $options->{'limit'};
 	  }
@@ -334,6 +395,33 @@ Runs the caveman estep
     -tumcn      : Path to tumour copy number file
     -normcn     : Path to normal copy number file
     -normcont   : normal contamination value (float)
+
+=item caveman_add_vcf_ids
+
+	Sanger::CGP::Caveman::implement::caveman_add_vcf_ids
+
+Appends IDS to a vcf file
+
+	options - Hashref, requires the following entries:
+		-raw_file  : Path to the existing vcf file
+		-ids_file  : Path to generate the vcf file with IDs
+
+
+=item caveman_flag
+
+	Sanger::CGP::Caveman::Implement::caveman_flag(,$options);
+
+Runs flagging (post processing) over CaVEMan results
+
+	options - Hashref, requires the following entries:
+		-tumbam        : Path to tumour bam file
+    -normbam       : Path to normal bam file
+    -for_flagging  : Path to file to be flagged
+	  -flagged       : Path to output flagged file
+    -reference     : Path to reference index fa.fai
+		-flag-bed      : Directory containing flagging related bed files
+		-germindel     : path to germline indel file
+		-unmatchedvcf  : Directory containing unmatched VCF files
 
 =item caveman_merge_results
 

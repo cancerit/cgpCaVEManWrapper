@@ -5,9 +5,9 @@
 #
 #  Author: David Jones <cgpit@sanger.ac.uk>
 #
-#  This file is part of cavemanWrapper.
+#  This file is part of cgpCaVEManWrapper.
 #
-#  cavemanWrapper is free software: you can redistribute it and/or modify it under
+#  cgpCaVEManWrapper is free software: you can redistribute it and/or modify it under
 #  the terms of the GNU Affero General Public License as published by the Free
 #  Software Foundation; either version 3 of the License, or (at your option) any
 #  later version.
@@ -43,19 +43,27 @@ use File::Copy;
 use PCAP::Cli;
 use Sanger::CGP::Caveman::Implement;
 
-const my @VALID_PROCESS => qw(setup split split_concat mstep merge estep merge_results);
+const my @VALID_PROCESS => qw(setup split split_concat mstep merge estep merge_results add_ids flag);
 const my $CAVEMAN_CONFIG => 'caveman.cfg.ini';
 const my $CAVEMAN_ALG_BEAN => 'alg_bean';
 const my $CAVEMAN_PROB_ARR => 'prob_arr';
 const my $CAVEMAN_COV_ARR => 'cov_arr';
 
-my %index_max = ( 'setup'  => 1,
-									'split'  => -1,
-									'mstep'  => -1,
-									'merge'  => 1,
-									'estep'  => -1,
-									'merge_results'   => 1,
-									'split_concat' => -1);
+const my $RAW_MUTS => q{%s.muts.vcf};
+const my $IDS_MUTS => q{%s.muts.ids.vcf};
+const my $FLAGGED_MUTS => q{%s.flagged.muts.vcf};
+const my $RAW_SNPS => q{%s.snps.vcf};
+const my $IDS_SNPS => q{%s.muts.ids.vcf};
+const my $NO_ANALYSIS => q{%s.no_analysis.bed};
+
+my %index_max = ( 'setup' => 1,
+									'split' => -1,
+									'mstep' => -1,
+									'merge' => 1,
+									'estep' => -1,
+									'merge_results' => 1,
+									'add_ids' => 1,
+									'flag' => 1);
 
 {
 	my $options = setup();
@@ -105,16 +113,40 @@ my %index_max = ( 'setup'  => 1,
 	}
 
 	#Now we have all the results... merge all the split results files into one for each type.
+	$options->{'out_file'} = File::Spec->catfile($options->{'tmp'},$options->{'tumour_name'}."_vs_".$options->{'normal_name'});
 	if(!exists $options->{'process'} || $options->{'process'} eq 'merge_results'){
-	  $options->{'out_file'} = File::Spec->catfile($options->{'outdir'},$options->{'tumour_name'}."_vs_".$options->{'normal_name'});
 		Sanger::CGP::Caveman::Implement::caveman_merge_results($options);
-	  #finally cleanup after ourselves by removing the temporary output folder, split files etc.
-  	cleanup($options);
   }
+
+  #Add ids to the VCF files
+	if(!exists $options->{'process'} || $options->{'process'} eq 'add_ids'){
+		$options->{'raw_muts_file'} = sprintf($RAW_MUTS,$options->{'out_file'});
+		$options->{'ids_muts_file'} = sprintf($IDS_MUTS,$options->{'out_file'});
+		$options->{'raw_snps_file'} = sprintf($RAW_SNPS,$options->{'out_file'});
+		$options->{'ids_snps_file'} = sprintf($IDS_MUTS,$options->{'out_file'});
+		#Muts
+		$options->{'raw_file'} = $options->{'raw_muts_file'};
+		$options->{'ids_file'} = $options->{'ids_muts_file'};
+		Sanger::CGP::Caveman::Implement::add_vcf_ids($options);
+		#Snps
+		$options->{'raw_file'} = $options->{'raw_snps_file'};
+		$options->{'ids_file'} = $options->{'ids_snps_file'};
+		Sanger::CGP::Caveman::Implement::add_vcf_ids($options);
+	}
+
+  #Flag the results.
+	if(!exists $options->{'process'} || $options->{'process'} eq 'flag'){
+		$options->{'for_flagging'} = $options->{'ids_muts_file'};
+		$options->{'flagged'} = sprintf($FLAGGED_MUTS,$options->{'out_file'});
+		Sanger::CGP::Caveman::Implement::caveman_flag($options);
+		#finally cleanup after ourselves by removing the temporary output folder, split files etc.
+  	cleanup($options);
+	}
 }
 
 sub cleanup{
 	my $options = shift;
+	my $final_loc = File::Spec->catfile($options->{'outdir'},$options->{'tumour_name'}."_vs_".$options->{'normal_name'});
   #Move cov array, prob array, alg bean, config, splitList
   move ($options->{'cave_cfg'},File::Spec->catfile($options->{'outdir'},$CAVEMAN_CONFIG))
       || die "Error trying to move config file '$options->{cave_cfg}' -> '".File::Spec->catfile($options->{'outdir'},$CAVEMAN_CONFIG)."': $!";
@@ -126,6 +158,14 @@ sub cleanup{
       || die "Error trying to move cov_array '$options->{cave_carr}' -> '".File::Spec->catfile($options->{'outdir'},$CAVEMAN_COV_ARR)."': $!";
   move ($options->{'splitList'},File::Spec->catfile($options->{'outdir'},'splitList'))
       || die "Error trying to move splitList '$options->{splitList}' -> '".File::Spec->catfile($options->{'outdir'},'splitList')."': $!";
+ 	move (sprintf($IDS_MUTS,$options->{'out_file'}),sprintf($IDS_MUTS,$final_loc))
+ 			|| die "Error trying to move raw muts file '".sprintf($IDS_MUTS,$options->{'out_file'})."' -> '".sprintf($IDS_MUTS,$final_loc)."': $!";
+	move (sprintf($IDS_SNPS,$options->{'out_file'}),sprintf($IDS_SNPS,$final_loc))
+ 			|| die "Error trying to move raw SNPs file '".sprintf($IDS_SNPS,$options->{'out_file'})."' -> '".sprintf($IDS_SNPS,$final_loc)."': $!";
+ 	move (sprintf($NO_ANALYSIS,$options->{'out_file'}),sprintf($NO_ANALYSIS,$final_loc))
+ 			|| die "Error trying to move no analysis file '".sprintf($NO_ANALYSIS,$options->{'out_file'})."' -> '".sprintf($NO_ANALYSIS,$final_loc)."': $!";
+	move (sprintf($FLAGGED_MUTS,$options->{'out_file'}),sprintf($FLAGGED_MUTS,$final_loc))
+ 			|| die "Error trying to move flagged muts file '".sprintf($FLAGGED_MUTS,$options->{'out_file'})."' -> '".sprintf($FLAGGED_MUTS,$final_loc)."': $!";
   move ($options->{'logs'},File::Spec->catdir($options->{'outdir'},'logs'))
       || die "Error trying to move logs directory '$options->{logs}' -> '".File::Spec->catdir($options->{'outdir'},'logs')."': $!";
   remove_tree ($options->{'tmp'});
@@ -153,6 +193,9 @@ sub setup {
 					'g|logs=s' => \$opts{'lgs'},
 					'i|index=i' => \$opts{'index'},
 					'l|limit=i' => \$opts{'limit'},
+					'b|flag-bed-files=s' => \$opts{'flag-bed'},
+					'in|germline-indel=s' => \$opts{'germindel'},
+					'u|unmatched-vcf=s' => \$opts{'unmatchedvcf'},
   ) or pod2usage(2);
 
   pod2usage(-message => PCAP::license, -verbose => 2) if(defined $opts{'h'});
@@ -180,6 +223,7 @@ sub setup {
   PCAP::Cli::file_for_reading('ignore-file',$opts{'ignore'});
   PCAP::Cli::file_for_reading('tum-cn-file',$opts{'tumcn'});
   PCAP::Cli::file_for_reading('norm-cn-file',$opts{'normcn'});
+  PCAP::Cli::file_for_reading('germline-indel-bed',$opts{'germindel'});
   PCAP::Cli::out_dir_check('outdir', $opts{'outdir'});
 
   delete $opts{'process'} unless(defined $opts{'process'});
@@ -266,7 +310,7 @@ caveman.pl - Analyse aligned bam files for SNVs via CaVEMan using a single comma
 
 caveman.pl [options]
 
-  	Required parameters:
+  Required parameters:
     -outdir            -o   Folder to output result to.
     -reference         -r   Path to reference genome index file *.fai
     -tumour-bam        -tb  Path to tumour bam file
@@ -276,6 +320,9 @@ caveman.pl [options]
     -normal-cn         -nc  Path to normal copy number file
     -species           -s   Species name for (output in VCF)
     -species-assembly  -sa  Species assembly for (output in VCF)
+    -flag-bed-files    -b   Bed file location for flagging (eg dbSNP.bed NB must be sorted.)
+		-germline-indel    -in  Location of germline indel bedfile
+		-unmatched-vcf     -u   Directory containing unmatched normal VCF files
 
    Optional parameters:
     -normal-contamination  -k   Normal contamination value (default 0.1)
@@ -334,13 +381,25 @@ Species name for (output in VCF) e.g HUMAN
 
 Species assembly for (output in VCF) e.g. 37
 
+=item B<-flag-bed-files>
+
+Bed file location for flagging (eg dbSNP.bed NB must be sorted.)
+
+=item B<-germline-indel>
+
+Location of germline indel bedfile
+
+=item B<-unmatched-vcf>
+
+Directory containing unmatched normal VCF files
+
 =item B<-logs>
 
 Override default log location of outdir/logs to the given folder.
 
 =item B<-process>
 
-Used to restrict to a single process. Valid processes are [setup|split|split_concat|mstep|merge|estep|merge_results]. Use in conjunction with -index to restrict to a single job in a process.
+Used to restrict to a single process. Valid processes are [setup|split|split_concat|mstep|merge|estep|merge_results|add_ids|flag]. Use in conjunction with -index to restrict to a single job in a process.
 
 =item B<-index>
 
