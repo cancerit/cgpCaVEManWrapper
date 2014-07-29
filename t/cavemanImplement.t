@@ -3,9 +3,9 @@
 #
 #  Author: David Jones <cgpit@sanger.ac.uk>
 #
-#  This file is part of cavemanWrapper.
+#  This file is part of cgpCaVEManWrapper.
 #
-#  cavemanWrapper is free software: you can redistribute it and/or modify it under
+#  cgpCaVEManWrapper is free software: you can redistribute it and/or modify it under
 #  the terms of the GNU Affero General Public License as published by the Free
 #  Software Foundation; either version 3 of the License, or (at your option) any
 #  later version.
@@ -32,6 +32,8 @@ my $test_data = "$Bin/../testData";
 
 my $good_fq = File::Spec->catfile($test_data, '1_2.fq');
 my $bad_fq = File::Spec->catfile($test_data, '1_2_bad.fq');
+my $out_prefix = File::Spec->catfile($test_data, 'sample');
+my $tmp = $test_data;
 
 subtest 'Initialisation checks' => sub {
   use_ok($MODULE);
@@ -57,6 +59,26 @@ subtest 'Indicies limits' => sub {
   is($indicies[0], 1, 'Limit = max jobs/2, value[0]=1 (index_in=1)');
   is($indicies[1], 3, 'Limit = max jobs/2, value[1]=3 (index_in=1)');
   @indicies = Sanger::CGP::Caveman::Implement::limited_xstep_indicies($options, 2);
+  is(scalar @indicies, 2, 'Limit = max jobs/2, 2 values (index_in=2)');
+  is($indicies[0], 2, 'Limit = max jobs/2, value[0]=2 (index_in=2)');
+  is($indicies[1], 4, 'Limit = max jobs/2, value[1]=4 (index_in=2)');
+};
+
+subtest 'Indicies limits file count' => sub {
+	my $options = {'vcf_split_count' => 4};
+	my @indicies = Sanger::CGP::Caveman::Implement::limited_flag_indicies($options, 1);
+  is(scalar @indicies, 1, 'No limit, single value');
+  is($indicies[0], 1, 'No limit, single value=1');
+  $options->{'limit'} = 4;
+  @indicies = Sanger::CGP::Caveman::Implement::limited_flag_indicies($options, 1);
+  is(scalar @indicies, 1, 'Limit matches max jobs, single value');
+  is($indicies[0], 1, 'Limit matches max jobs, single value=1');
+  $options->{'limit'} = 2;
+  @indicies = Sanger::CGP::Caveman::Implement::limited_flag_indicies($options, 1);
+  is(scalar @indicies, 2, 'Limit = max jobs/2, 2 values (index_in=1)');
+  is($indicies[0], 1, 'Limit = max jobs/2, value[0]=1 (index_in=1)');
+  is($indicies[1], 3, 'Limit = max jobs/2, value[1]=3 (index_in=1)');
+  @indicies = Sanger::CGP::Caveman::Implement::limited_flag_indicies($options, 2);
   is(scalar @indicies, 2, 'Limit = max jobs/2, 2 values (index_in=2)');
   is($indicies[0], 2, 'Limit = max jobs/2, value[0]=2 (index_in=2)');
   is($indicies[1], 4, 'Limit = max jobs/2, value[1]=4 (index_in=2)');

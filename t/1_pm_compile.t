@@ -1,11 +1,11 @@
 ########## LICENCE ##########
 # Copyright (c) 2014 Genome Research Ltd.
 #
-# Author: Keiran Raine <cgpit@sanger.ac.uk>
+# Author: David Jones <cgpit@sanger.ac.uk>
 #
-# This file is part of cgpPindel.
+# This file is part of cgpCaVEManWrapper.
 #
-# cgpPindel is free software: you can redistribute it and/or modify it under
+# cgpCaVEManWrapper is free software: you can redistribute it and/or modify it under
 # the terms of the GNU Affero General Public License as published by the Free
 # Software Foundation; either version 3 of the License, or (at your option) any
 # later version.
