@@ -21,7 +21,7 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 ##########LICENCE##########
 
-CAVEMAN_CORE="https://github.com/cancerit/CaVEMan/archive/1.2.5.tar.gz"
+CAVEMAN_CORE="https://github.com/cancerit/CaVEMan/archive/1.2.6.tar.gz"
 SOURCE_SAMTOOLS="https://github.com/samtools/samtools/archive/0.1.19.tar.gz"
 
 
@@ -128,13 +128,13 @@ if [ -e $SETUP_DIR/caveman.success ]; then
 else
   cd $SETUP_DIR
   (
-  set -x
+  set -xe
   if [ ! -e caveman ]; then
-    if [ ! -e $INIT_DIR/CaVEMan-1.2.5.tar.gz ]; then
+    if [ ! -e $INIT_DIR/CaVEMan-1.2.6.tar.gz ]; then
       get_distro "caveman" $CAVEMAN_CORE
     else
       mkdir -p caveman
-      tar --strip-components 1 -C caveman -zxf $INIT_DIR/CaVEMan-1.2.5.tar.gz
+      tar --strip-components 1 -C caveman -zxf $INIT_DIR/CaVEMan-1.2.6.tar.gz
     fi
   fi
   make -C caveman clean
