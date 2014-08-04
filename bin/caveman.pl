@@ -52,8 +52,12 @@ const my $CAVEMAN_COV_ARR => 'cov_arr';
 const my $RAW_MUTS => q{%s.muts.vcf};
 const my $IDS_MUTS => q{%s.muts.ids.vcf};
 const my $FLAGGED_MUTS => q{%s.flagged.muts.vcf};
+const my $FLAGGED_MUTS_GZ => q{%s.flagged.muts.vcf.gz};
+const my $FLAGGED_MUTS_TBI => q{%s.flagged.muts.vcf.gz.tbi};
 const my $RAW_SNPS => q{%s.snps.vcf};
-const my $IDS_SNPS => q{%s.muts.ids.vcf};
+const my $IDS_SNPS => q{%s.snps.ids.vcf};
+const my $IDS_SNPS_GZ => q{%s.snps.ids.vcf.gz};
+const my $IDS_SNPS_TBI => q{%s.snps.ids.vcf.gz.tbi};
 const my $NO_ANALYSIS => q{%s.no_analysis.bed};
 
 my %index_max = ( 'setup' => 1,
@@ -118,20 +122,22 @@ my %index_max = ( 'setup' => 1,
 		Sanger::CGP::Caveman::Implement::caveman_merge_results($options);
   }
 
+  # these values are used in multiple blocks
+  $options->{'raw_muts_file'} = sprintf($RAW_MUTS,$options->{'out_file'});
+  $options->{'ids_muts_file'} = sprintf($IDS_MUTS,$options->{'out_file'});
+  $options->{'raw_snps_file'} = sprintf($RAW_SNPS,$options->{'out_file'});
+  $options->{'ids_snps_file'} = sprintf($IDS_SNPS,$options->{'out_file'});
+
   #Add ids to the VCF files
 	if(!exists $options->{'process'} || $options->{'process'} eq 'add_ids'){
-		$options->{'raw_muts_file'} = sprintf($RAW_MUTS,$options->{'out_file'});
-		$options->{'ids_muts_file'} = sprintf($IDS_MUTS,$options->{'out_file'});
-		$options->{'raw_snps_file'} = sprintf($RAW_SNPS,$options->{'out_file'});
-		$options->{'ids_snps_file'} = sprintf($IDS_MUTS,$options->{'out_file'});
 		#Muts
 		$options->{'raw_file'} = $options->{'raw_muts_file'};
 		$options->{'ids_file'} = $options->{'ids_muts_file'};
-		Sanger::CGP::Caveman::Implement::add_vcf_ids($options);
+		Sanger::CGP::Caveman::Implement::caveman_add_vcf_ids($options, 'muts');
 		#Snps
 		$options->{'raw_file'} = $options->{'raw_snps_file'};
 		$options->{'ids_file'} = $options->{'ids_snps_file'};
-		Sanger::CGP::Caveman::Implement::add_vcf_ids($options);
+		Sanger::CGP::Caveman::Implement::caveman_add_vcf_ids($options, 'snps');
 	}
 
   #Flag the results.
@@ -158,16 +164,22 @@ sub cleanup{
       || die "Error trying to move cov_array '$options->{cave_carr}' -> '".File::Spec->catfile($options->{'outdir'},$CAVEMAN_COV_ARR)."': $!";
   move ($options->{'splitList'},File::Spec->catfile($options->{'outdir'},'splitList'))
       || die "Error trying to move splitList '$options->{splitList}' -> '".File::Spec->catfile($options->{'outdir'},'splitList')."': $!";
- 	move (sprintf($IDS_MUTS,$options->{'out_file'}),sprintf($IDS_MUTS,$final_loc))
- 			|| die "Error trying to move raw muts file '".sprintf($IDS_MUTS,$options->{'out_file'})."' -> '".sprintf($IDS_MUTS,$final_loc)."': $!";
-	move (sprintf($IDS_SNPS,$options->{'out_file'}),sprintf($IDS_SNPS,$final_loc))
- 			|| die "Error trying to move raw SNPs file '".sprintf($IDS_SNPS,$options->{'out_file'})."' -> '".sprintf($IDS_SNPS,$final_loc)."': $!";
  	move (sprintf($NO_ANALYSIS,$options->{'out_file'}),sprintf($NO_ANALYSIS,$final_loc))
  			|| die "Error trying to move no analysis file '".sprintf($NO_ANALYSIS,$options->{'out_file'})."' -> '".sprintf($NO_ANALYSIS,$final_loc)."': $!";
-	move (sprintf($FLAGGED_MUTS,$options->{'out_file'}),sprintf($FLAGGED_MUTS,$final_loc))
- 			|| die "Error trying to move flagged muts file '".sprintf($FLAGGED_MUTS,$options->{'out_file'})."' -> '".sprintf($FLAGGED_MUTS,$final_loc)."': $!";
+
+	move (sprintf($IDS_SNPS_GZ,$options->{'out_file'}),sprintf($IDS_SNPS_GZ,$final_loc))
+ 			|| die "Error trying to move raw SNPs file '".sprintf($IDS_SNPS_GZ,$options->{'out_file'})."' -> '".sprintf($IDS_SNPS_GZ,$final_loc)."': $!";
+	move (sprintf($IDS_SNPS_TBI,$options->{'out_file'}),sprintf($IDS_SNPS_TBI,$final_loc))
+ 			|| die "Error trying to move raw SNPs file '".sprintf($IDS_SNPS_TBI,$options->{'out_file'})."' -> '".sprintf($IDS_SNPS_TBI,$final_loc)."': $!";
+
+	move (sprintf($FLAGGED_MUTS_GZ,$options->{'out_file'}),sprintf($FLAGGED_MUTS_GZ,$final_loc))
+ 			|| die "Error trying to move flagged muts file '".sprintf($FLAGGED_MUTS_GZ,$options->{'out_file'})."' -> '".sprintf($FLAGGED_MUTS_GZ,$final_loc)."': $!";
+	move (sprintf($FLAGGED_MUTS_TBI,$options->{'out_file'}),sprintf($FLAGGED_MUTS_TBI,$final_loc))
+ 			|| die "Error trying to move flagged muts file '".sprintf($FLAGGED_MUTS_TBI,$options->{'out_file'})."' -> '".sprintf($FLAGGED_MUTS_TBI,$final_loc)."': $!";
+
   move ($options->{'logs'},File::Spec->catdir($options->{'outdir'},'logs'))
       || die "Error trying to move logs directory '$options->{logs}' -> '".File::Spec->catdir($options->{'outdir'},'logs')."': $!";
+
   remove_tree ($options->{'tmp'});
 	return 0;
 }
@@ -196,6 +208,9 @@ sub setup {
 					'b|flag-bed-files=s' => \$opts{'flag-bed'},
 					'in|germline-indel=s' => \$opts{'germindel'},
 					'u|unmatched-vcf=s' => \$opts{'unmatchedvcf'},
+					'c|flagConfig=s' => \$opts{'flagConfig'},
+					'f|flagToVcfConfig=s' => \$opts{'flagToVcfConfig'},
+					'st|seqType=s' => \$opts{'seqType'},
   ) or pod2usage(2);
 
   pod2usage(-message => PCAP::license, -verbose => 2) if(defined $opts{'h'});
@@ -206,7 +221,9 @@ sub setup {
   for(keys %opts) { $defined++ if(defined $opts{$_}); }
   pod2usage(-msg  => "\nERROR: Options must be defined.\n", -verbose => 2,  -output => \*STDERR) unless($defined);
 
-	pod2usage(-msg  => "\nERROR: Options must be defined.\n", -verbose => 2,  -output => \*STDERR) unless(defined($opts{'species'}) && defined($opts{'species-assembly'}));
+	pod2usage(-msg  => "\nERROR: 'species' must be defined.\n", -verbose => 2,  -output => \*STDERR) unless(defined $opts{'species'});
+	pod2usage(-msg  => "\nERROR: 'species-assembly' must be defined.\n", -verbose => 2,  -output => \*STDERR) unless(defined $opts{'species-assembly'});
+	pod2usage(-msg  => "\nERROR: 'seqType' must be defined.\n", -verbose => 2,  -output => \*STDERR) unless(defined $opts{'seqType'});
 
   #check the reference is the fasta fai file.
   pod2usage(-msg  => "\nERROR: reference option (-r) does not appear to be a fasta index file.\n", -verbose => 2,  -output => \*STDERR) unless($opts{'reference'} =~ m/\.fai$/);
@@ -225,6 +242,9 @@ sub setup {
   PCAP::Cli::file_for_reading('norm-cn-file',$opts{'normcn'});
   PCAP::Cli::file_for_reading('germline-indel-bed',$opts{'germindel'});
   PCAP::Cli::out_dir_check('outdir', $opts{'outdir'});
+
+  PCAP::Cli::file_for_reading('flagConfig',$opts{'flagConfig'}) if(defined $opts{'flagConfig'});
+  PCAP::Cli::file_for_reading('flagToVcfConfig',$opts{'flagToVcfConfig'}) if(defined $opts{'flagToVcfConfig'});
 
   delete $opts{'process'} unless(defined $opts{'process'});
   delete $opts{'index'} unless(defined $opts{'index'});
@@ -272,10 +292,10 @@ sub setup {
   make_path($progress) unless(-d $progress);
 	#Directory to store run logs.
 	my $logs;
-	if($opts{'lgs'}){
+	if(defined $opts{'lgs'}){
 	  $logs = $opts{'lgs'};
 	}else{
-    $logs = File::Spec->catdir($opts{'outdir'}, 'logs');
+    $logs = File::Spec->catdir($opts{'tmp'}, 'logs');
 	}
 	make_path($logs) unless(-d $logs);
 	$opts{'logs'} = $logs;
@@ -321,22 +341,28 @@ caveman.pl [options]
     -species           -s   Species name for (output in VCF)
     -species-assembly  -sa  Species assembly for (output in VCF)
     -flag-bed-files    -b   Bed file location for flagging (eg dbSNP.bed NB must be sorted.)
-		-germline-indel    -in  Location of germline indel bedfile
-		-unmatched-vcf     -u   Directory containing unmatched normal VCF files
+    -germline-indel    -in  Location of germline indel bedfile
+    -unmatched-vcf     -u   Directory containing unmatched normal VCF files
+    -seqType           -st  Sequencing type (genomic|pulldown)
 
    Optional parameters:
-    -normal-contamination  -k   Normal contamination value (default 0.1)
-    -threads               -t   Number of threads allowed on this machine (default 1)
-    -limit                 -l   Limit the number of jobs required for m/estep (default undef)
-    -logs                  -g   Location to write logs (default is ./logs)
+    -normal-contamination -k  Normal contamination value (default 0.1)
+    -threads              -t  Number of threads allowed on this machine (default 1)
+    -limit                -l  Limit the number of jobs required for m/estep (default undef)
+    -logs                 -g  Location to write logs (default is ./logs)
+
+  Optional flagging parameters: [default to those found in cgpCaVEManPostProcessing]
+    -flagConfig       -c  Config ini file to use for flag list and settings
+    -flagToVcfConfig  -f  Config::Inifiles style config file containing VCF flag code to flag
+                          name conversions
 
    Targeted processing (further detail under OPTIONS):
-    -process   -p   Only process this step then exit, optionally set -index
-    -index     -i   Optionally restrict '-p' to single job
+    -process  -p  Only process this step then exit, optionally set -index
+    -index    -i  Optionally restrict '-p' to single job
 
-	Other:
-    -help     -h   Brief help message.
-    -man      -m   Full documentation.
+  Other:
+    -help     -h  Brief help message.
+    -man      -m  Full documentation.
 
 =head1 OPTIONS
 
