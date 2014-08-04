@@ -1,6 +1,8 @@
 bin/caveman.pl
 bin/caveman_merge_results.pl
 CaVEMan-1.2.5.tar.gz
+CaVEMan-1.2.6.tar.gz
+caveman.setup
 docs.tar.gz
 docs/pod_html/_blkbluw.css
 docs/pod_html/_blkcynw.css
@@ -38,5 +40,6 @@ setup.log
 setup.sh
 t/1_pm_compile.t
 t/2_pl_compile.t
-t/pcapCaveman.t
+t/cavemanImplement.t
 testData/1_2.fq
+testData/1_2_bad.fq
