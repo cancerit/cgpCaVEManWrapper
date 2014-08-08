@@ -99,7 +99,7 @@ sub caveman_setup {
 
 	PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $command, 0);
 
-	return PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), 'caveman_setup', 0);
+	return PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), 0);
 }
 
 sub caveman_split {
@@ -109,13 +109,13 @@ sub caveman_split {
 	return 1 if(exists $options->{'index'} && $index != $options->{'index'});
 	my $tmp = $options->{'tmp'};
   my $config = $options->{'cave_cfg'};
-	return 1 if PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'), 'caveman_split', $index);
+	return 1 if PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'), $index);
 
 	my $command = _which('caveman') || die "Unable to find 'caveman' in path";
 	$command .= sprintf($CAVEMAN_SPLIT,$index,$config);
 
 	PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $command, $index);
-  	return PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), 'caveman_split', $index);
+  	return PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), $index);
 }
 
 sub caveman_merge{
@@ -127,13 +127,13 @@ sub caveman_merge{
 	my $config = $options->{'cave_cfg'};
 	my $prob_arr = $options->{'cave_parr'};
 	my $cov_arr = $options->{'cave_carr'};
-	return 1 if PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'), 'caveman_merge', 0);
+	return 1 if PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'), 0);
 
 	$command .= sprintf($CAVEMAN_MERGE, $cov_arr, $prob_arr,$config);
 
 	PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $command, 0);
 
-	return PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), 'caveman_merge', 0);
+	return PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), 0);
 }
 
 sub caveman_mstep{
@@ -147,7 +147,7 @@ sub caveman_mstep{
   my $config = $options->{'cave_cfg'};
 	my $tmp = $options->{'tmp'};
 	for my $index(@indicies) {
-    next if PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'), 'caveman_mstep', $index);
+    next if PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'), $index);
 
     my $command = _which('caveman') || die "Unable to find 'caveman' in path";
 
@@ -156,7 +156,7 @@ sub caveman_mstep{
                     $config);
 
     PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $command, $index);
-    PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), 'caveman_mstep', $index);
+    PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), $index);
   }
   return 1;
 }
@@ -177,7 +177,7 @@ sub caveman_estep{
 	my $tumprot = $options->{'tumprot'};
 
 	for my $index(@indicies) {
-    next if PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'), 'caveman_estep', $index);
+    next if PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'), $index);
 
     my $command = _which('caveman') || die "Unable to find 'caveman' in path";
 
@@ -195,7 +195,7 @@ sub caveman_estep{
                     $tumprot);
 
     PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $command, $index);
-    PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), 'caveman_estep', $index);
+    PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), $index);
   }
   return 1;
 }
@@ -225,20 +225,20 @@ sub caveman_merge_results {
 
 sub caveman_add_vcf_ids{
 	# uncoverable subroutine
-	my $options = shift;
+	my ($options, $snps_or_muts) = @_;
 	my $tmp = $options->{'tmp'};
 	my $raw = $options->{'raw_file'};
 	my $ids = $options->{'ids_file'};
 
-	return 1 if PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'), 'caveman_add_vcf_ids', 0);
+	return 1 if PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'), $snps_or_muts);
 
-	my $command = _which($IDS_SCRIPT) ||  die "Unable to find '$IDS_SCRIPT' in path";
+	my $command = $^X.' '._which($IDS_SCRIPT) ||  die "Unable to find '$IDS_SCRIPT' in path";
 	$command .= sprintf($CAVEMAN_VCF_IDS,
 														$raw,
 														$ids);
 
-	PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $command, 0);
-	return PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), 'caveman_add_vcf_ids', 0);
+	PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $command, $snps_or_muts);
+	return PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), $snps_or_muts);
 }
 
 sub caveman_flag{
@@ -251,10 +251,10 @@ sub caveman_flag{
 	my $normbam = $options->{'normbam'};
 	my $ref = $options->{'reference'};
 
-	return 1 if PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'), 'caveman_flag', 0);
+	return 1 if PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'), 0);
 
-	my $command = _which($FLAG_SCRIPT) || die "Unable to find '$FLAG_SCRIPT' in path";
-	$command .= sprintf($CAVEMAN_FLAG,
+	my $flag = $^X.' '._which($FLAG_SCRIPT) || die "Unable to find '$FLAG_SCRIPT' in path";
+	$flag .= sprintf($CAVEMAN_FLAG,
 							$for_flagging,
 							$flagged,
 							$options->{'species'},
@@ -263,10 +263,30 @@ sub caveman_flag{
 							$options->{'flag-bed'},
 							$options->{'germindel'},
 							$options->{'unmatchedvcf'},
-							$ref);
+							$ref,
+							$options->{'seqType'},
+							);
+	$flag .= ' -c '.$options->{'flagConfig'} if(defined $options->{'flagConfig'});
+	$flag .= ' -v '.$options->{'flagToVcfConfig'} if(defined $options->{'flagToVcfConfig'});
 
-	PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $command, 0);
-	return PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), 'caveman_flag', 0);
+  my $vcf_gz = $flagged.'.gz';
+  my $bgzip = _which('bgzip');
+  $bgzip .= sprintf ' -c %s > %s', $flagged, $vcf_gz;
+
+  my $tabix = _which('tabix');
+  $tabix .= sprintf ' -p vcf %s', $vcf_gz;
+
+  my $vcf_snps_gz = $options->{'ids_snps_file'}.'.gz';
+  my $bgzip_snps = _which('bgzip');
+  $bgzip_snps .= sprintf ' -c %s > %s', $options->{'ids_snps_file'}, $vcf_snps_gz;
+
+  my $tabix_snps = _which('tabix');
+  $tabix_snps .= sprintf ' -p vcf %s', $vcf_snps_gz;
+
+  my @commands = ($flag, $bgzip, $tabix, $bgzip_snps, $tabix_snps);
+
+	PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), \@commands, 0);
+	return PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), 0);
 }
 
 sub limited_flag_indicies {
@@ -303,11 +323,11 @@ sub concat {
 	my $tmp = $options->{'tmp'};
 	my $out = $options->{'out_file'};
 	my $target = $options->{'target_files'};
-	return 1 if PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'), 'caveman_concat_split', 0);
+	return 1 if PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'), 0);
 	my $command = sprintf('cat %s > %s',$target,$out);
 	PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $command, 0);
 
-	return PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), 'caveman_concat_split', 0);
+	return PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), 0);
 
 }
 
