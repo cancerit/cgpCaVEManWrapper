@@ -56,6 +56,9 @@ const my $RAW_SNPS => q{%s.snps.vcf};
 const my $IDS_SNPS => q{%s.muts.ids.vcf};
 const my $NO_ANALYSIS => q{%s.no_analysis.bed};
 
+const my @VALID_PROTOCOLS => qw(WGS WXS RNA);
+const my $DEFAULT_PROTOCOL => 'WGS';
+
 my %index_max = ( 'setup' => 1,
 									'split' => -1,
 									'mstep' => -1,
@@ -196,6 +199,8 @@ sub setup {
 					'b|flag-bed-files=s' => \$opts{'flag-bed'},
 					'in|germline-indel=s' => \$opts{'germindel'},
 					'u|unmatched-vcf=s' => \$opts{'unmatchedvcf'},
+					'np|normal-protocol=s' => \$opts{'normprot'},
+					'tp|tumour-protocol=s' => \$opts{'tumprot'},
   ) or pod2usage(2);
 
   pod2usage(-message => PCAP::license, -verbose => 2) if(defined $opts{'h'});
@@ -229,6 +234,28 @@ sub setup {
   delete $opts{'process'} unless(defined $opts{'process'});
   delete $opts{'index'} unless(defined $opts{'index'});
   delete $opts{'limit'} unless(defined $opts{'limit'});
+
+  if(exists($opts{'normprot'})){
+		my $good_prot = 0;
+		foreach my $val_p(@VALID_PROTOCOLS){
+			$good_prot = 1 if($val_p eq $opts{'normprot'});
+		}
+		pod2usage(-msg  => "\nERROR: -normal-protocol '".$opts{'normprot'}."' must be a valid protocol: ".
+									join('|',@VALID_PROTOCOLS).".\n", -verbose => 2,  -output => \*STDERR) unless($good_prot);
+  }else{
+		$opts{'normprot'} = $DEFAULT_PROTOCOL;
+  }
+
+  if(exists($opts{'tumprot'})){
+		my $good_prot = 0;
+		foreach my $val_p(@VALID_PROTOCOLS){
+			$good_prot = 1 if($val_p eq $opts{'tumprot'});
+		}
+		pod2usage(-msg  => "\nERROR: -tumour-protocol '".$opts{'tumprot'}."' must be a valid protocol: ".
+									join('|',@VALID_PROTOCOLS).".\n", -verbose => 2,  -output => \*STDERR) unless($good_prot);
+  }else{
+  	$opts{'tumprot'} = $DEFAULT_PROTOCOL;
+  }
 
 	if(exists $opts{'process'}) {
     PCAP::Cli::valid_process('process', $opts{'process'}, \@VALID_PROCESS);
@@ -329,6 +356,8 @@ caveman.pl [options]
     -threads               -t   Number of threads allowed on this machine (default 1)
     -limit                 -l   Limit the number of jobs required for m/estep (default undef)
     -logs                  -g   Location to write logs (default is ./logs)
+    -normal-protocol       -np  Normal protocol [WGS|WXS|RNA] (default WGS)
+    -tumour-protocol       -tp  Tumour protocol [WGS|WXS|RNA] (default WGS)
 
    Targeted processing (further detail under OPTIONS):
     -process   -p   Only process this step then exit, optionally set -index
@@ -396,6 +425,14 @@ Directory containing unmatched normal VCF files
 =item B<-logs>
 
 Override default log location of outdir/logs to the given folder.
+
+=item B<-normal-protocol>
+
+Override default of WGS for the normal sample protocol entry.
+
+=item B<-tumour-protocol>
+
+Override default of WGS for the tumour sample protocol entry.
 
 =item B<-process>
 

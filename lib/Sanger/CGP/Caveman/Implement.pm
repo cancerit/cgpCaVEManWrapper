@@ -40,7 +40,7 @@ const my $CAVEMAN_SETUP => q{ setup -t %s -n %s -r %s -g %s -l %s -f %s -c %s -a
 const my $CAVEMAN_SPLIT => q{ split -i %d -f %s};
 const my $CAVEMAN_MSTEP => q{ mstep -i %d -f %s};
 const my $CAVEMAN_MERGE => q{ merge -c %s -p %s -f %s};
-const my $CAVEMAN_ESTEP => q{ estep -i %d -e %s -j %s -k %f -g %s -o %s -v %s -w %s -f %s};
+const my $CAVEMAN_ESTEP => q{ estep -i %d -e %s -j %s -k %f -g %s -o %s -v %s -w %s -f %s -l %s -r %s};
 const my $CAVEMAN_FLAG => q{ -i %s -o %s -s %s -t %s -m %s -n %s -b %s -g %s -umv %s -ref %s};
 const my $MERGE_CAVEMAN_RESULTS => q{ mergeCavemanResults -o %s %s};
 const my $CAVEMAN_VCF_IDS => q{ -i %s -o %s};
@@ -173,6 +173,9 @@ sub caveman_estep{
 	my $tmp = $options->{'tmp'};
 	my $prob_arr = $options->{'cave_parr'};
 	my $cov_arr = $options->{'cave_carr'};
+	my $normprot = $options->{'normprot'};
+	my $tumprot = $options->{'tumprot'};
+
 	for my $index(@indicies) {
     next if PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'), 'caveman_estep', $index);
 
@@ -187,7 +190,9 @@ sub caveman_estep{
                     $prob_arr,
                     $options->{'species-assembly'},
                     $options->{'species'},
-                    $config);
+                    $config,
+                    $normprot,
+                    $tumprot);
 
     PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $command, $index);
     PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), 'caveman_estep', $index);
