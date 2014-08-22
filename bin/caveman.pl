@@ -243,8 +243,12 @@ sub setup {
   PCAP::Cli::file_for_reading('tumour-bai',$tumidx);
   PCAP::Cli::file_for_reading('normal-bai',$normidx);
   PCAP::Cli::file_for_reading('ignore-file',$opts{'ignore'});
-  PCAP::Cli::file_for_reading('tum-cn-file',$opts{'tumcn'});
-  PCAP::Cli::file_for_reading('norm-cn-file',$opts{'normcn'});
+  if(exists($opts{'tumcn'}) && defined($opts{'tumcn'})){
+  	PCAP::Cli::file_for_reading('tum-cn-file',$opts{'tumcn'});
+  }
+  if(exists($opts{'normcn'}) && defined($opts{'normcn'})){
+  	PCAP::Cli::file_for_reading('norm-cn-file',$opts{'normcn'});
+  }
   PCAP::Cli::file_for_reading('germline-indel-bed',$opts{'germindel'});
   PCAP::Cli::out_dir_check('outdir', $opts{'outdir'});
 
