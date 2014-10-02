@@ -259,7 +259,7 @@ sub setup {
   delete $opts{'index'} unless(defined $opts{'index'});
   delete $opts{'limit'} unless(defined $opts{'limit'});
 
-  if(exists($opts{'normprot'}) && defined($opts{'normprot'})){
+  if(defined($opts{'normprot'})){
 		my $good_prot = 0;
 		foreach my $val_p(@VALID_PROTOCOLS){
 			$good_prot = 1 if($val_p eq $opts{'normprot'});
@@ -270,7 +270,7 @@ sub setup {
 		$opts{'normprot'} = $DEFAULT_PROTOCOL;
   }
 
-  if(exists($opts{'tumprot'}) && defined($opts{'tumprot'})){
+  if(defined($opts{'tumprot'})){
 		my $good_prot = 0;
 		foreach my $val_p(@VALID_PROTOCOLS){
 			$good_prot = 1 if($val_p eq $opts{'tumprot'});
@@ -381,23 +381,21 @@ caveman.pl [options]
     -logs                  -g   Location to write logs (default is ./logs)
     -normal-protocol       -np  Normal protocol [WGS|WXS|RNA] (default WGS)
     -tumour-protocol       -tp  Tumour protocol [WGS|WXS|RNA] (default WGS)
-    -normal-contamination -k  Normal contamination value (default 0.1)
-    -threads              -t  Number of threads allowed on this machine (default 1)
-    -limit                -l  Limit the number of jobs required for m/estep (default undef)
-    -logs                 -g  Location to write logs (default is ./logs)
+    -normal-contamination  -k   Normal contamination value (default 0.1)
+    -threads               -t   Number of threads allowed on this machine (default 1)
 
   Optional flagging parameters: [default to those found in cgpCaVEManPostProcessing]
-    -flagConfig       -c  Config ini file to use for flag list and settings
-    -flagToVcfConfig  -f  Config::Inifiles style config file containing VCF flag code to flag
-                          name conversions
+    -flagConfig            -c   Config ini file to use for flag list and settings
+    -flagToVcfConfig       -f   Config::Inifiles style config file containing VCF flag code to flag
+                                name conversions
 
    Targeted processing (further detail under OPTIONS):
-    -process  -p  Only process this step then exit, optionally set -index
-    -index    -i  Optionally restrict '-p' to single job
+    -process               -p   Only process this step then exit, optionally set -index
+    -index                 -i   Optionally restrict '-p' to single job
 
   Other:
-    -help     -h  Brief help message.
-    -man      -m  Full documentation.
+    -help                  -h   Brief help message.
+    -man                   -m   Full documentation.
 
 =head1 OPTIONS
 
