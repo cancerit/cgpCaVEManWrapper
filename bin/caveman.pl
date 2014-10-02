@@ -259,7 +259,7 @@ sub setup {
   delete $opts{'index'} unless(defined $opts{'index'});
   delete $opts{'limit'} unless(defined $opts{'limit'});
 
-  if(exists($opts{'normprot'})){
+  if(exists($opts{'normprot'}) && defined($opts{'normprot'})){
 		my $good_prot = 0;
 		foreach my $val_p(@VALID_PROTOCOLS){
 			$good_prot = 1 if($val_p eq $opts{'normprot'});
@@ -270,7 +270,7 @@ sub setup {
 		$opts{'normprot'} = $DEFAULT_PROTOCOL;
   }
 
-  if(exists($opts{'tumprot'})){
+  if(exists($opts{'tumprot'}) && defined($opts{'tumprot'})){
 		my $good_prot = 0;
 		foreach my $val_p(@VALID_PROTOCOLS){
 			$good_prot = 1 if($val_p eq $opts{'tumprot'});
