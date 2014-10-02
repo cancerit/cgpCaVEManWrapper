@@ -281,6 +281,42 @@ sub setup {
   	$opts{'tumprot'} = $DEFAULT_PROTOCOL;
   }
 
+  # now safe to apply defaults
+	$opts{'threads'} = 1 unless(defined $opts{'threads'});
+
+	$opts{'normcont'} = 0.1 unless(defined $opts{'normcont'});
+
+	#Create the results directory in the output directory given.
+	my $tmpdir = File::Spec->catdir($opts{'outdir'}, 'tmpCaveman');
+	$opts{'tmp'} = $tmpdir;
+	my $resultsdir = File::Spec->catdir($opts{'tmp'}, 'results');
+	#directory to store progress reports
+	my $progress = File::Spec->catdir($opts{'tmp'}, 'progress');
+	#Directory to store run logs.
+	my $logs;
+	if(defined $opts{'lgs'}){
+	  $logs = $opts{'lgs'};
+	}else{
+    $logs = File::Spec->catdir($opts{'tmp'}, 'logs');
+	}
+	$opts{'logs'} = $logs;
+
+  my $config_file = File::Spec->catfile($opts{'tmp'},$CAVEMAN_CONFIG);
+  $opts{'cave_cfg'} = $config_file;
+  my $alg_bean = File::Spec->catfile($opts{'tmp'},$CAVEMAN_ALG_BEAN);
+  $opts{'cave_alg'} = $alg_bean;
+  my $prob_arr = File::Spec->catfile($opts{'tmp'},$CAVEMAN_PROB_ARR);
+  $opts{'cave_parr'} = $prob_arr;
+  my $cov_arr = File::Spec->catfile($opts{'tmp'},$CAVEMAN_COV_ARR);
+  $opts{'cave_carr'} = $cov_arr;
+
+  $opts{'splitList'} = File::Spec->catfile($opts{'tmp'},"splitList");
+	#vcf concat subs & snps
+  $opts{'subvcf'} = File::Spec->catfile($opts{'tmp'},"results/*/*.muts.vcf");
+  $opts{'snpvcf'} = File::Spec->catfile($opts{'tmp'},"results/*/*.snps.vcf");
+	#bed concat no_analysis
+  $opts{'noanalysisbed'} = File::Spec->catfile($opts{'tmp'},"results/*/*.no_analysis.bed");
+
 	if(exists $opts{'process'}) {
     PCAP::Cli::valid_process('process', $opts{'process'}, \@VALID_PROCESS);
     if(exists $opts{'index'}) {
@@ -306,48 +342,10 @@ sub setup {
     die "ERROR: -index cannot be defined without -process\n";
   }
 
-
-	# now safe to apply defaults
-	$opts{'threads'} = 1 unless(defined $opts{'threads'});
-
-	$opts{'normcont'} = 0.1 unless(defined $opts{'normcont'});
-
-	#Create the results directory in the output directory given.
-	my $tmpdir = File::Spec->catdir($opts{'outdir'}, 'tmpCaveman');
-	make_path($tmpdir) unless(-d $tmpdir);
-	$opts{'tmp'} = $tmpdir;
-	my $resultsdir = File::Spec->catdir($opts{'tmp'}, 'results');
+  make_path($tmpdir) unless(-d $tmpdir);
 	make_path($resultsdir) unless(-d $resultsdir);
-	#directory to store progress reports
-	my $progress = File::Spec->catdir($opts{'tmp'}, 'progress');
-  make_path($progress) unless(-d $progress);
-	#Directory to store run logs.
-	my $logs;
-	if(defined $opts{'lgs'}){
-	  $logs = $opts{'lgs'};
-	}else{
-    $logs = File::Spec->catdir($opts{'tmp'}, 'logs');
-	}
+	make_path($progress) unless(-d $progress);
 	make_path($logs) unless(-d $logs);
-	$opts{'logs'} = $logs;
-
-  my $config_file = File::Spec->catfile($opts{'tmp'},$CAVEMAN_CONFIG);
-  $opts{'cave_cfg'} = $config_file;
-  my $alg_bean = File::Spec->catfile($opts{'tmp'},$CAVEMAN_ALG_BEAN);
-  $opts{'cave_alg'} = $alg_bean;
-  my $prob_arr = File::Spec->catfile($opts{'tmp'},$CAVEMAN_PROB_ARR);
-  $opts{'cave_parr'} = $prob_arr;
-  my $cov_arr = File::Spec->catfile($opts{'tmp'},$CAVEMAN_COV_ARR);
-  $opts{'cave_carr'} = $cov_arr;
-
-  $opts{'splitList'} = File::Spec->catfile($opts{'tmp'},"splitList");
-	#vcf concat subs & snps
-  $opts{'subvcf'} = File::Spec->catfile($opts{'tmp'},"results/*/*.muts.vcf");
-  $opts{'snpvcf'} = File::Spec->catfile($opts{'tmp'},"results/*/*.snps.vcf");
-	#bed concat no_analysis
-  $opts{'noanalysisbed'} = File::Spec->catfile($opts{'tmp'},"results/*/*.no_analysis.bed");
-
-
 	return \%opts;
 }
 

@@ -235,8 +235,8 @@ sub caveman_add_vcf_ids{
 	my $ids = $options->{'ids_file'};
 
 	return 1 if PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'), $snps_or_muts);
-
-	my $command = $^X.' '._which($IDS_SCRIPT) ||  die "Unable to find '$IDS_SCRIPT' in path";
+	my $script = _which($IDS_SCRIPT) ||  die "Unable to find '$IDS_SCRIPT' in path";
+	my $command = $^X.' '.$script;
 	$command .= sprintf($CAVEMAN_VCF_IDS,
 														$raw,
 														$ids);
