@@ -41,7 +41,7 @@ const my $CAVEMAN_SPLIT => q{ split -i %d -f %s};
 const my $CAVEMAN_MSTEP => q{ mstep -i %d -f %s};
 const my $CAVEMAN_MERGE => q{ merge -c %s -p %s -f %s};
 const my $CAVEMAN_ESTEP => q{ estep -i %d -k %f -g %s -o %s -v %s -w %s -f %s -l %s -r %s};
-const my $CAVEMAN_FLAG => q{ -i %s -o %s -s %s -t %s -m %s -n %s -b %s -g %s -umv %s -ref %s};
+const my $CAVEMAN_FLAG => q{ -i %s -o %s -s %s -m %s -n %s -b %s -g %s -umv %s -ref %s -t %s};
 const my $MERGE_CAVEMAN_RESULTS => q{ mergeCavemanResults -o %s %s};
 const my $CAVEMAN_VCF_IDS => q{ -i %s -o %s};
 
@@ -256,8 +256,8 @@ sub caveman_flag{
 	my $ref = $options->{'reference'};
 
 	return 1 if PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'), 0);
-
-	my $flag = $^X.' '._which($FLAG_SCRIPT) || die "Unable to find '$FLAG_SCRIPT' in path";
+	my $script = _which($FLAG_SCRIPT) || die "Unable to find '$FLAG_SCRIPT' in path";
+	my $flag = $^X.' '.$script;
 	$flag .= sprintf($CAVEMAN_FLAG,
 							$for_flagging,
 							$flagged,
