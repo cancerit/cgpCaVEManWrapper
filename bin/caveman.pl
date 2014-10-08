@@ -25,7 +25,7 @@
 BEGIN {
   use Cwd qw(abs_path);
   use File::Basename;
-  push (@INC,dirname(abs_path($0)).'/../lib');
+  unshift (@INC,dirname(abs_path($0)).'/../lib');
 };
 
 use strict;
@@ -39,6 +39,7 @@ use Pod::Usage qw(pod2usage);
 use List::Util qw(first);
 use Const::Fast qw(const);
 use File::Copy;
+use Capture::Tiny qw(capture_stdout);
 
 use PCAP::Cli;
 use Sanger::CGP::Caveman::Implement;
@@ -65,6 +66,7 @@ const my $DEFAULT_PROTOCOL => 'WGS';
 
 my %index_max = ( 'setup' => 1,
 									'split' => -1,
+									'split_concat' => 1,
 									'mstep' => -1,
 									'merge' => 1,
 									'estep' => -1,
@@ -201,7 +203,7 @@ sub setup {
 					'tc|tumour-cn=s' => \$opts{'tumcn'},
 					'nc|normal-cn=s' => \$opts{'normcn'},
 					't|threads=i' => \$opts{'threads'},
-					'k|normal-contamination=f' => \$opts{'normcont'},
+					'k|normal-contamination=s' => \$opts{'normcont'},
 					's|species=s' => \$opts{'species'},
 					'sa|species-assembly=s' => \$opts{'species-assembly'},
 					'p|process=s' => \$opts{'process'},
@@ -284,7 +286,24 @@ sub setup {
   # now safe to apply defaults
 	$opts{'threads'} = 1 unless(defined $opts{'threads'});
 
-	$opts{'normcont'} = 0.1 unless(defined $opts{'normcont'});
+	if(defined $opts{'normcont'}) {
+	  if(-e $opts{'normcont'}) {
+	    pod2usage(-msg => "\nERROR: '-k' appears to be an empty file.\n", -verbose => 2,  -output => \*STDERR) if(-s _ == 0);
+	    my $value = capture_stdout{ system(qq{grep -F 'NormalContamination' $opts{normcont}}); };
+	    chomp $value;
+	    if($value =~ m/^NormalContamination\s([[:digit:]]\.?[[:digit:]]*)$/) {
+	      $opts{'normcont'} = $1;
+	    }
+	    else {
+	      pod2usage(-msg => "\nERROR: Failed to get normal-contamination from $opts{normcont} file.\n", -verbose => 2,  -output => \*STDERR);
+	    }
+	  }
+	}
+	else {
+	  $opts{'normcont'} = 0.1;
+	}
+
+	pod2usage(-msg => "\nERROR: normal-contamination should be <1 even if from ASCAT.samplestatistics.csv file ($opts{normcont}).\n", -verbose => 2,  -output => \*STDERR) unless($opts{'normcont'} =~ m/^0\.?[[:digit:]]*$/);
 
 	#Create the results directory in the output directory given.
 	my $tmpdir = File::Spec->catdir($opts{'outdir'}, 'tmpCaveman');
@@ -343,10 +362,10 @@ sub setup {
   }
 
   make_path($tmpdir) unless(-d $tmpdir);
-	make_path($resultsdir) unless(-d $resultsdir);
-	make_path($progress) unless(-d $progress);
-	make_path($logs) unless(-d $logs);
-	return \%opts;
+  make_path($resultsdir) unless(-d $resultsdir);
+  make_path($progress) unless(-d $progress);
+  make_path($logs) unless(-d $logs);
+  return \%opts;
 }
 
 __END__
@@ -371,7 +390,7 @@ caveman.pl [options]
     -species-assembly  -sa  Species assembly for (output in VCF)
     -flag-bed-files    -b   Bed file location for flagging (eg dbSNP.bed NB must be sorted.)
     -germline-indel    -in  Location of germline indel bedfile
-    -unmatched-vcf     -u   Directory containing unmatched normal VCF files
+    -unmatched-vcf     -u   Directory containing unmatched normal VCF files or http/ftp base URL
     -seqType           -st  Sequencing type (genomic|pulldown)
 
    Optional parameters:
@@ -381,7 +400,6 @@ caveman.pl [options]
     -logs                  -g   Location to write logs (default is ./logs)
     -normal-protocol       -np  Normal protocol [WGS|WXS|RNA] (default WGS)
     -tumour-protocol       -tp  Tumour protocol [WGS|WXS|RNA] (default WGS)
-    -normal-contamination  -k   Normal contamination value (default 0.1)
     -threads               -t   Number of threads allowed on this machine (default 1)
 
   Optional flagging parameters: [default to those found in cgpCaVEManPostProcessing]

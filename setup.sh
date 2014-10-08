@@ -21,8 +21,8 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 ##########LICENCE##########
 
-CAVEMAN_CORE="https://github.com/cancerit/CaVEMan/archive/1.2.6.tar.gz"
-SOURCE_SAMTOOLS="https://github.com/samtools/samtools/archive/0.1.19.tar.gz"
+CAVEMAN_CORE="https://github.com/cancerit/CaVEMan/archive/1.4.1.tar.gz"
+SOURCE_SAMTOOLS="https://github.com/samtools/samtools/archive/0.1.20.tar.gz"
 
 
 done_message () {
@@ -95,9 +95,15 @@ echo > $INIT_DIR/setup.log
     echo
 ) >>$INIT_DIR/setup.log 2>&1
 
-PCAP=`perl -le 'eval "require $ARGV[0]" and print $ARGV[0]->VERSION' PCAP`
-if [[ "x$PCAP" == "x" ]] ; then
-  echo "PREREQUISITE: Please install PCAP-core before proceeding:\thttps://github.com/ICGC-TCGA-PanCancer/PCAP-core/releases"
+CHK=`perl -le 'eval "require $ARGV[0]" and print $ARGV[0]->VERSION' PCAP`
+if [[ "x$CHK" == "x" ]] ; then
+  echo "PREREQUISITE: Please install PCAP-core before proceeding: https://github.com/ICGC-TCGA-PanCancer/PCAP-core/releases"
+  exit 1;
+fi
+
+
+if [ ! -e $PERLROOT/Sanger/CGP/CavemanPostProcessor.pm ]; then
+  echo "PREREQUISITE: Please install cgpCaVEManPostProcessing before proceeding: https://github.com/cancerit/cgpCaVEManPostProcessing/releases"
   exit 1;
 fi
 
@@ -130,12 +136,7 @@ else
   (
   set -xe
   if [ ! -e caveman ]; then
-    if [ ! -e $INIT_DIR/CaVEMan-1.2.6.tar.gz ]; then
-      get_distro "caveman" $CAVEMAN_CORE
-    else
-      mkdir -p caveman
-      tar --strip-components 1 -C caveman -zxf $INIT_DIR/CaVEMan-1.2.6.tar.gz
-    fi
+    get_distro "caveman" $CAVEMAN_CORE
   fi
   make -C caveman clean
   make -C caveman -j$CPU
@@ -160,7 +161,7 @@ if ! ( perl -MExtUtils::MakeMaker -e 1 >/dev/null 2>&1); then
 fi
 (
   set -x
-  $INIT_DIR/bin/cpanm -v --mirror http://cpan.metacpan.org -notest -l $INST_PATH/ --installdeps . < /dev/null
+  perl $INIT_DIR/bin/cpanm -v --mirror http://cpan.metacpan.org --notest -l $INST_PATH/ --installdeps . < /dev/null
   set +x
 ) >>$INIT_DIR/setup.log 2>&1
 done_message "" "Failed during installation of core dependencies."
