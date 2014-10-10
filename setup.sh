@@ -21,7 +21,7 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 ##########LICENCE##########
 
-CAVEMAN_CORE="https://github.com/cancerit/CaVEMan/archive/1.4.1.tar.gz"
+CAVEMAN_CORE="https://github.com/cancerit/CaVEMan/archive/1.4.2.tar.gz"
 SOURCE_SAMTOOLS="https://github.com/samtools/samtools/archive/0.1.20.tar.gz"
 
 
