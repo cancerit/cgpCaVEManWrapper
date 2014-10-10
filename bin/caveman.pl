@@ -5,9 +5,9 @@
 #
 #  Author: David Jones <cgpit@sanger.ac.uk>
 #
-#  This file is part of cavemanWrapper.
+#  This file is part of cgpCaVEManWrapper.
 #
-#  cavemanWrapper is free software: you can redistribute it and/or modify it under
+#  cgpCaVEManWrapper is free software: you can redistribute it and/or modify it under
 #  the terms of the GNU Affero General Public License as published by the Free
 #  Software Foundation; either version 3 of the License, or (at your option) any
 #  later version.
@@ -25,7 +25,7 @@
 BEGIN {
   use Cwd qw(abs_path);
   use File::Basename;
-  push (@INC,dirname(abs_path($0)).'/../lib');
+  unshift (@INC,dirname(abs_path($0)).'/../lib');
 };
 
 use strict;
@@ -38,17 +38,41 @@ use Getopt::Long;
 use Pod::Usage qw(pod2usage);
 use List::Util qw(first);
 use Const::Fast qw(const);
+use File::Copy;
+use Capture::Tiny qw(capture_stdout);
 
 use PCAP::Cli;
 use Sanger::CGP::Caveman::Implement;
 
-const my @VALID_PROCESS => qw(setup split mstep merge estep merge_results);
-my %index_max = ( 'setup'  => 1,
-									'split'  => -1,
-									'mstep'  => -1,
-									'merge'  => 1,
-									'estep'  => -1,
-									'merge_results'   => 1,);
+const my @VALID_PROCESS => qw(setup split split_concat mstep merge estep merge_results add_ids flag);
+const my $CAVEMAN_CONFIG => 'caveman.cfg.ini';
+const my $CAVEMAN_ALG_BEAN => 'alg_bean';
+const my $CAVEMAN_PROB_ARR => 'prob_arr';
+const my $CAVEMAN_COV_ARR => 'cov_arr';
+
+const my $RAW_MUTS => q{%s.muts.vcf};
+const my $IDS_MUTS => q{%s.muts.ids.vcf};
+const my $FLAGGED_MUTS => q{%s.flagged.muts.vcf};
+const my $FLAGGED_MUTS_GZ => q{%s.flagged.muts.vcf.gz};
+const my $FLAGGED_MUTS_TBI => q{%s.flagged.muts.vcf.gz.tbi};
+const my $RAW_SNPS => q{%s.snps.vcf};
+const my $IDS_SNPS => q{%s.snps.ids.vcf};
+const my $IDS_SNPS_GZ => q{%s.snps.ids.vcf.gz};
+const my $IDS_SNPS_TBI => q{%s.snps.ids.vcf.gz.tbi};
+const my $NO_ANALYSIS => q{%s.no_analysis.bed};
+
+const my @VALID_PROTOCOLS => qw(WGS WXS RNA);
+const my $DEFAULT_PROTOCOL => 'WGS';
+
+my %index_max = ( 'setup' => 1,
+									'split' => -1,
+									'split_concat' => 1,
+									'mstep' => -1,
+									'merge' => 1,
+									'estep' => -1,
+									'merge_results' => 1,
+									'add_ids' => 1,
+									'flag' => 1);
 
 {
 	my $options = setup();
@@ -74,8 +98,12 @@ my %index_max = ( 'setup'  => 1,
 		$options->{'out_file'} = $options->{'splitList'};
 		my $contig_count = Sanger::CGP::Caveman::Implement::file_line_count($options->{'reference'});
 		$threads->run($contig_count, 'caveman_split', $options);
-		$options->{'target_files'} = $options->{'splitList'}.".*";
-		Sanger::CGP::Caveman::Implement::concat($options);
+	}
+
+  if(!exists $options->{'process'} || $options->{'process'} eq 'split_concat'){
+    $options->{'out_file'} = $options->{'splitList'};
+    $options->{'target_files'} = $options->{'splitList'}.".*";
+	  Sanger::CGP::Caveman::Implement::concat($options);
 	}
 
 	my $split_count = Sanger::CGP::Caveman::Implement::file_line_count($options->{'splitList'}) if(!exists $options->{'process'} || first { $options->{'process'} eq $_ } ('mstep', 'estep'));
@@ -94,25 +122,70 @@ my %index_max = ( 'setup'  => 1,
 	}
 
 	#Now we have all the results... merge all the split results files into one for each type.
-	$options->{'out_file'} = File::Spec->catfile($options->{'outdir'},$options->{'tumour_name'}."_vs_".$options->{'normal_name'}) if(!exists $options->{'process'} || $options->{'process'} eq 'merge_results');
+	$options->{'out_file'} = File::Spec->catfile($options->{'tmp'},$options->{'tumour_name'}."_vs_".$options->{'normal_name'});
 	if(!exists $options->{'process'} || $options->{'process'} eq 'merge_results'){
 		Sanger::CGP::Caveman::Implement::caveman_merge_results($options);
-	  #finally cleanup after ourselves by removing the temporary output folder, split files etc.
-  	cleanup($options);
   }
+
+  # these values are used in multiple blocks
+  $options->{'raw_muts_file'} = sprintf($RAW_MUTS,$options->{'out_file'});
+  $options->{'ids_muts_file'} = sprintf($IDS_MUTS,$options->{'out_file'});
+  $options->{'raw_snps_file'} = sprintf($RAW_SNPS,$options->{'out_file'});
+  $options->{'ids_snps_file'} = sprintf($IDS_SNPS,$options->{'out_file'});
+
+  #Add ids to the VCF files
+	if(!exists $options->{'process'} || $options->{'process'} eq 'add_ids'){
+		#Muts
+		$options->{'raw_file'} = $options->{'raw_muts_file'};
+		$options->{'ids_file'} = $options->{'ids_muts_file'};
+		Sanger::CGP::Caveman::Implement::caveman_add_vcf_ids($options, 'muts');
+		#Snps
+		$options->{'raw_file'} = $options->{'raw_snps_file'};
+		$options->{'ids_file'} = $options->{'ids_snps_file'};
+		Sanger::CGP::Caveman::Implement::caveman_add_vcf_ids($options, 'snps');
+	}
+
+  #Flag the results.
+	if(!exists $options->{'process'} || $options->{'process'} eq 'flag'){
+		$options->{'for_flagging'} = $options->{'ids_muts_file'};
+		$options->{'flagged'} = sprintf($FLAGGED_MUTS,$options->{'out_file'});
+		Sanger::CGP::Caveman::Implement::caveman_flag($options);
+		#finally cleanup after ourselves by removing the temporary output folder, split files etc.
+  	cleanup($options);
+	}
 }
 
 sub cleanup{
 	my $options = shift;
-	#Get the splitFiles.* and remove them
+	my $final_loc = File::Spec->catfile($options->{'outdir'},$options->{'tumour_name'}."_vs_".$options->{'normal_name'});
+  #Move cov array, prob array, alg bean, config, splitList
+  move ($options->{'cave_cfg'},File::Spec->catfile($options->{'outdir'},$CAVEMAN_CONFIG))
+      || die "Error trying to move config file '$options->{cave_cfg}' -> '".File::Spec->catfile($options->{'outdir'},$CAVEMAN_CONFIG)."': $!";
+  move ($options->{'cave_alg'},File::Spec->catfile($options->{'outdir'},$CAVEMAN_ALG_BEAN))
+      || die "Error trying to move alg_bean '$options->{cave_alg}' -> '".File::Spec->catfile($options->{'outdir'},$CAVEMAN_ALG_BEAN)."': $!";
+  move ($options->{'cave_parr'},File::Spec->catfile($options->{'outdir'},$CAVEMAN_PROB_ARR))
+      || die "Error trying to move prob_array '$options->{cave_parr}' -> '".File::Spec->catfile($options->{'outdir'},$CAVEMAN_PROB_ARR)."': $!";
+  move ($options->{'cave_carr'},File::Spec->catfile($options->{'outdir'},$CAVEMAN_COV_ARR))
+      || die "Error trying to move cov_array '$options->{cave_carr}' -> '".File::Spec->catfile($options->{'outdir'},$CAVEMAN_COV_ARR)."': $!";
+  move ($options->{'splitList'},File::Spec->catfile($options->{'outdir'},'splitList'))
+      || die "Error trying to move splitList '$options->{splitList}' -> '".File::Spec->catfile($options->{'outdir'},'splitList')."': $!";
+ 	move (sprintf($NO_ANALYSIS,$options->{'out_file'}),sprintf($NO_ANALYSIS,$final_loc))
+ 			|| die "Error trying to move no analysis file '".sprintf($NO_ANALYSIS,$options->{'out_file'})."' -> '".sprintf($NO_ANALYSIS,$final_loc)."': $!";
 
-	unlink glob $options->{'subvcf'};
-	unlink glob $options->{'snpvcf'};
-	unlink glob $options->{'noanalysisbed'};
-	unlink glob $options->{'splitList'}.'.*';
-  remove_tree (File::Spec->catdir($options->{'outdir'}, 'results'));
-  remove_tree (File::Spec->catdir($options->{'outdir'}, 'logs'));
-  remove_tree (File::Spec->catdir($options->{'outdir'}, 'progress'));
+	move (sprintf($IDS_SNPS_GZ,$options->{'out_file'}),sprintf($IDS_SNPS_GZ,$final_loc))
+ 			|| die "Error trying to move raw SNPs file '".sprintf($IDS_SNPS_GZ,$options->{'out_file'})."' -> '".sprintf($IDS_SNPS_GZ,$final_loc)."': $!";
+	move (sprintf($IDS_SNPS_TBI,$options->{'out_file'}),sprintf($IDS_SNPS_TBI,$final_loc))
+ 			|| die "Error trying to move raw SNPs file '".sprintf($IDS_SNPS_TBI,$options->{'out_file'})."' -> '".sprintf($IDS_SNPS_TBI,$final_loc)."': $!";
+
+	move (sprintf($FLAGGED_MUTS_GZ,$options->{'out_file'}),sprintf($FLAGGED_MUTS_GZ,$final_loc))
+ 			|| die "Error trying to move flagged muts file '".sprintf($FLAGGED_MUTS_GZ,$options->{'out_file'})."' -> '".sprintf($FLAGGED_MUTS_GZ,$final_loc)."': $!";
+	move (sprintf($FLAGGED_MUTS_TBI,$options->{'out_file'}),sprintf($FLAGGED_MUTS_TBI,$final_loc))
+ 			|| die "Error trying to move flagged muts file '".sprintf($FLAGGED_MUTS_TBI,$options->{'out_file'})."' -> '".sprintf($FLAGGED_MUTS_TBI,$final_loc)."': $!";
+
+  move ($options->{'logs'},File::Spec->catdir($options->{'outdir'},'logs'))
+      || die "Error trying to move logs directory '$options->{logs}' -> '".File::Spec->catdir($options->{'outdir'},'logs')."': $!";
+
+  remove_tree ($options->{'tmp'});
 	return 0;
 }
 
@@ -130,11 +203,21 @@ sub setup {
 					'tc|tumour-cn=s' => \$opts{'tumcn'},
 					'nc|normal-cn=s' => \$opts{'normcn'},
 					't|threads=i' => \$opts{'threads'},
-					'k|normal-contamination=f' => \$opts{'normcont'},
+					'k|normal-contamination=s' => \$opts{'normcont'},
 					's|species=s' => \$opts{'species'},
 					'sa|species-assembly=s' => \$opts{'species-assembly'},
 					'p|process=s' => \$opts{'process'},
+					'g|logs=s' => \$opts{'lgs'},
 					'i|index=i' => \$opts{'index'},
+					'l|limit=i' => \$opts{'limit'},
+					'b|flag-bed-files=s' => \$opts{'flag-bed'},
+					'in|germline-indel=s' => \$opts{'germindel'},
+					'u|unmatched-vcf=s' => \$opts{'unmatchedvcf'},
+					'np|normal-protocol=s' => \$opts{'normprot'},
+					'tp|tumour-protocol=s' => \$opts{'tumprot'},
+					'c|flagConfig=s' => \$opts{'flagConfig'},
+					'f|flagToVcfConfig=s' => \$opts{'flagToVcfConfig'},
+					'st|seqType=s' => \$opts{'seqType'},
   ) or pod2usage(2);
 
   pod2usage(-message => PCAP::license, -verbose => 2) if(defined $opts{'h'});
@@ -145,10 +228,16 @@ sub setup {
   for(keys %opts) { $defined++ if(defined $opts{$_}); }
   pod2usage(-msg  => "\nERROR: Options must be defined.\n", -verbose => 2,  -output => \*STDERR) unless($defined);
 
-	pod2usage(-msg  => "\nERROR: Options must be defined.\n", -verbose => 2,  -output => \*STDERR) unless(defined($opts{'species'}) && defined($opts{'species-assembly'}));
+	pod2usage(-msg  => "\nERROR: 'species' must be defined.\n", -verbose => 2,  -output => \*STDERR) unless(defined $opts{'species'});
+	pod2usage(-msg  => "\nERROR: 'species-assembly' must be defined.\n", -verbose => 2,  -output => \*STDERR) unless(defined $opts{'species-assembly'});
+	pod2usage(-msg  => "\nERROR: 'seqType' must be defined.\n", -verbose => 2,  -output => \*STDERR) unless(defined $opts{'seqType'});
 
   #check the reference is the fasta fai file.
   pod2usage(-msg  => "\nERROR: reference option (-r) does not appear to be a fasta index file.\n", -verbose => 2,  -output => \*STDERR) unless($opts{'reference'} =~ m/\.fai$/);
+
+  delete $opts{'process'} unless(defined $opts{'process'});
+  delete $opts{'index'} unless(defined $opts{'index'});
+  delete $opts{'limit'} unless(defined $opts{'limit'});
 
   #Check all files and dirs are readable and exist.
   PCAP::Cli::file_for_reading('reference',$opts{'reference'});
@@ -160,30 +249,107 @@ sub setup {
   PCAP::Cli::file_for_reading('tumour-bai',$tumidx);
   PCAP::Cli::file_for_reading('normal-bai',$normidx);
   PCAP::Cli::file_for_reading('ignore-file',$opts{'ignore'});
-  PCAP::Cli::file_for_reading('tum-cn-file',$opts{'tumcn'});
-  PCAP::Cli::file_for_reading('norm-cn-file',$opts{'normcn'});
+  if(exists($opts{'tumcn'}) && defined($opts{'tumcn'})){
+  	PCAP::Cli::file_for_reading('tum-cn-file',$opts{'tumcn'});
+  }
+  if(exists($opts{'normcn'}) && defined($opts{'normcn'})){
+  	PCAP::Cli::file_for_reading('norm-cn-file',$opts{'normcn'});
+  }
+  PCAP::Cli::file_for_reading('germline-indel-bed',$opts{'germindel'}) if(exists $opts{'process'} && $opts{'process'} eq 'flag');
   PCAP::Cli::out_dir_check('outdir', $opts{'outdir'});
 
-  delete $opts{'process'} unless(defined $opts{'process'});
-  delete $opts{'index'} unless(defined $opts{'index'});
+  PCAP::Cli::file_for_reading('flagConfig',$opts{'flagConfig'}) if(defined $opts{'flagConfig'});
+  PCAP::Cli::file_for_reading('flagToVcfConfig',$opts{'flagToVcfConfig'}) if(defined $opts{'flagToVcfConfig'});
 
-	$opts{'splitList'} = File::Spec->catfile($opts{'outdir'},"splitList");
+  if(defined($opts{'normprot'})){
+		my $good_prot = 0;
+		foreach my $val_p(@VALID_PROTOCOLS){
+			$good_prot = 1 if($val_p eq $opts{'normprot'});
+		}
+		pod2usage(-msg  => "\nERROR: -normal-protocol '".$opts{'normprot'}."' must be a valid protocol: ".
+									join('|',@VALID_PROTOCOLS).".\n", -verbose => 2,  -output => \*STDERR) unless($good_prot);
+  }else{
+		$opts{'normprot'} = $DEFAULT_PROTOCOL;
+  }
+
+  if(defined($opts{'tumprot'})){
+		my $good_prot = 0;
+		foreach my $val_p(@VALID_PROTOCOLS){
+			$good_prot = 1 if($val_p eq $opts{'tumprot'});
+		}
+		pod2usage(-msg  => "\nERROR: -tumour-protocol '".$opts{'tumprot'}."' must be a valid protocol: ".
+									join('|',@VALID_PROTOCOLS).".\n", -verbose => 2,  -output => \*STDERR) unless($good_prot);
+  }else{
+  	$opts{'tumprot'} = $DEFAULT_PROTOCOL;
+  }
+
+  # now safe to apply defaults
+	$opts{'threads'} = 1 unless(defined $opts{'threads'});
+
+	if(defined $opts{'normcont'}) {
+	  if(-e $opts{'normcont'}) {
+	    pod2usage(-msg => "\nERROR: '-k' appears to be an empty file.\n", -verbose => 2,  -output => \*STDERR) if(-s _ == 0);
+	    my $value = capture_stdout{ system(qq{grep -F 'NormalContamination' $opts{normcont}}); };
+	    chomp $value;
+	    if($value =~ m/^NormalContamination\s([[:digit:]]\.?[[:digit:]]*)$/) {
+	      $opts{'normcont'} = $1;
+	    }
+	    else {
+	      pod2usage(-msg => "\nERROR: Failed to get normal-contamination from $opts{normcont} file.\n", -verbose => 2,  -output => \*STDERR);
+	    }
+	  }
+	}
+	else {
+	  $opts{'normcont'} = 0.1;
+	}
+
+	pod2usage(-msg => "\nERROR: normal-contamination should be <1 even if from ASCAT.samplestatistics.csv file ($opts{normcont}).\n", -verbose => 2,  -output => \*STDERR) unless($opts{'normcont'} =~ m/^0\.?[[:digit:]]*$/);
+
+	#Create the results directory in the output directory given.
+	my $tmpdir = File::Spec->catdir($opts{'outdir'}, 'tmpCaveman');
+	$opts{'tmp'} = $tmpdir;
+	my $resultsdir = File::Spec->catdir($opts{'tmp'}, 'results');
+	#directory to store progress reports
+	my $progress = File::Spec->catdir($opts{'tmp'}, 'progress');
+	#Directory to store run logs.
+	my $logs;
+	if(defined $opts{'lgs'}){
+	  $logs = $opts{'lgs'};
+	}else{
+    $logs = File::Spec->catdir($opts{'tmp'}, 'logs');
+	}
+	$opts{'logs'} = $logs;
+
+  my $config_file = File::Spec->catfile($opts{'tmp'},$CAVEMAN_CONFIG);
+  $opts{'cave_cfg'} = $config_file;
+  my $alg_bean = File::Spec->catfile($opts{'tmp'},$CAVEMAN_ALG_BEAN);
+  $opts{'cave_alg'} = $alg_bean;
+  my $prob_arr = File::Spec->catfile($opts{'tmp'},$CAVEMAN_PROB_ARR);
+  $opts{'cave_parr'} = $prob_arr;
+  my $cov_arr = File::Spec->catfile($opts{'tmp'},$CAVEMAN_COV_ARR);
+  $opts{'cave_carr'} = $cov_arr;
+
+  $opts{'splitList'} = File::Spec->catfile($opts{'tmp'},"splitList");
 	#vcf concat subs & snps
-  $opts{'subvcf'} = File::Spec->catfile($opts{'outdir'},"results/*/*.muts.vcf");
-  $opts{'snpvcf'} = File::Spec->catfile($opts{'outdir'},"results/*/*.snps.vcf");
+  $opts{'subvcf'} = File::Spec->catfile($opts{'tmp'},"results/*/*.muts.vcf");
+  $opts{'snpvcf'} = File::Spec->catfile($opts{'tmp'},"results/*/*.snps.vcf");
 	#bed concat no_analysis
-  $opts{'noanalysisbed'} = File::Spec->catfile($opts{'outdir'},"results/*/*.no_analysis.bed");
+  $opts{'noanalysisbed'} = File::Spec->catfile($opts{'tmp'},"results/*/*.no_analysis.bed");
 
 	if(exists $opts{'process'}) {
     PCAP::Cli::valid_process('process', $opts{'process'}, \@VALID_PROCESS);
     if(exists $opts{'index'}) {
       my $max = $index_max{$opts{'process'}};
-      my $max_idx=0;
       if($max==-1){
-      	$max_idx = Sanger::CGP::Caveman::Implement::valid_index(\%opts);
+        if(exists $opts{'limit'}) {
+          $max = $opts{'limit'};
+        }
+        else {
+      	  $max = Sanger::CGP::Caveman::Implement::valid_index(\%opts);
+      	}
       }
 
-      die "ERROR: based on reference and exclude option index must be between 1 and $max_idx\n" if($opts{'index'} < 1 || $opts{'index'} > $max);
+      die "ERROR: based on reference and exclude option index must be between 1 and $max\n" if($opts{'index'} < 1 || $opts{'index'} > $max);
       PCAP::Cli::opt_requires_opts('index', \%opts, ['process']);
 
       die "No max has been defined for this process type\n" if($max == 0);
@@ -195,24 +361,11 @@ sub setup {
     die "ERROR: -index cannot be defined without -process\n";
   }
 
-
-	# now safe to apply defaults
-	$opts{'threads'} = 1 unless(defined $opts{'threads'});
-
-	delete $opts{'normcont'} unless(defined $opts{'normcont'});
-
-	#Create the results directory in the output directory given.
-	my $tmpdir = File::Spec->catdir($opts{'outdir'}, 'results');
-	make_path($tmpdir) unless(-d $tmpdir);
-	#directory to store progress reports
-	my $progress = File::Spec->catdir($tmpdir, 'progress');
-   make_path($progress) unless(-d $progress);
-	#Directory to store run logs.
-	my $logs = File::Spec->catdir($opts{'outdir'}, 'logs');
-   make_path($logs) unless(-d $logs);
-
-
-	return \%opts;
+  make_path($tmpdir) unless(-d $tmpdir);
+  make_path($resultsdir) unless(-d $resultsdir);
+  make_path($progress) unless(-d $progress);
+  make_path($logs) unless(-d $logs);
+  return \%opts;
 }
 
 __END__
@@ -225,28 +378,42 @@ caveman.pl - Analyse aligned bam files for SNVs via CaVEMan using a single comma
 
 caveman.pl [options]
 
-  	Required parameters:
+  Required parameters:
     -outdir            -o   Folder to output result to.
     -reference         -r   Path to reference genome index file *.fai
-	 -tumour-bam         -tb  Path to tumour bam file
+    -tumour-bam        -tb  Path to tumour bam file
     -normal-bam        -nb  Path to normal bam file
     -ignore-file       -ig  Path to ignored regions file
     -tumour-cn         -tc  Path to tumour copy number file
     -normal-cn         -nc  Path to normal copy number file
     -species           -s   Species name for (output in VCF)
     -species-assembly  -sa  Species assembly for (output in VCF)
+    -flag-bed-files    -b   Bed file location for flagging (eg dbSNP.bed NB must be sorted.)
+    -germline-indel    -in  Location of germline indel bedfile
+    -unmatched-vcf     -u   Directory containing unmatched normal VCF files or http/ftp base URL
+    -seqType           -st  Sequencing type (genomic|pulldown)
 
    Optional parameters:
     -normal-contamination  -k   Normal contamination value (default 0.1)
     -threads               -t   Number of threads allowed on this machine (default 1)
+    -limit                 -l   Limit the number of jobs required for m/estep (default undef)
+    -logs                  -g   Location to write logs (default is ./logs)
+    -normal-protocol       -np  Normal protocol [WGS|WXS|RNA] (default WGS)
+    -tumour-protocol       -tp  Tumour protocol [WGS|WXS|RNA] (default WGS)
+    -threads               -t   Number of threads allowed on this machine (default 1)
+
+  Optional flagging parameters: [default to those found in cgpCaVEManPostProcessing]
+    -flagConfig            -c   Config ini file to use for flag list and settings
+    -flagToVcfConfig       -f   Config::Inifiles style config file containing VCF flag code to flag
+                                name conversions
 
    Targeted processing (further detail under OPTIONS):
-    -process   -p   Only process this step then exit, optionally set -index
-    -index     -i   Optionally restrict '-p' to single job
+    -process               -p   Only process this step then exit, optionally set -index
+    -index                 -i   Optionally restrict '-p' to single job
 
-	Other:
-    -help     -h   Brief help message.
-    -man      -m   Full documentation.
+  Other:
+    -help                  -h   Brief help message.
+    -man                   -m   Full documentation.
 
 =head1 OPTIONS
 
@@ -291,9 +458,33 @@ Species name for (output in VCF) e.g HUMAN
 
 Species assembly for (output in VCF) e.g. 37
 
+=item B<-flag-bed-files>
+
+Bed file location for flagging (eg dbSNP.bed NB must be sorted.)
+
+=item B<-germline-indel>
+
+Location of germline indel bedfile
+
+=item B<-unmatched-vcf>
+
+Directory containing unmatched normal VCF files
+
+=item B<-logs>
+
+Override default log location of outdir/logs to the given folder.
+
+=item B<-normal-protocol>
+
+Override default of WGS for the normal sample protocol entry.
+
+=item B<-tumour-protocol>
+
+Override default of WGS for the tumour sample protocol entry.
+
 =item B<-process>
 
-Used to restrict to a single process. Valid processes are [setup|split|mstep|merge|estep|merge_results]. Use in conjunction with -index to restrict to a single job in a process.
+Used to restrict to a single process. Valid processes are [setup|split|split_concat|mstep|merge|estep|merge_results|add_ids|flag]. Use in conjunction with -index to restrict to a single job in a process.
 
 =item B<-index>
 
