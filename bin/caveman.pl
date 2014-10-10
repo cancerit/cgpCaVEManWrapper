@@ -235,6 +235,10 @@ sub setup {
   #check the reference is the fasta fai file.
   pod2usage(-msg  => "\nERROR: reference option (-r) does not appear to be a fasta index file.\n", -verbose => 2,  -output => \*STDERR) unless($opts{'reference'} =~ m/\.fai$/);
 
+  delete $opts{'process'} unless(defined $opts{'process'});
+  delete $opts{'index'} unless(defined $opts{'index'});
+  delete $opts{'limit'} unless(defined $opts{'limit'});
+
   #Check all files and dirs are readable and exist.
   PCAP::Cli::file_for_reading('reference',$opts{'reference'});
   PCAP::Cli::file_for_reading('tumour-bam',$opts{'tumbam'});
@@ -251,15 +255,11 @@ sub setup {
   if(exists($opts{'normcn'}) && defined($opts{'normcn'})){
   	PCAP::Cli::file_for_reading('norm-cn-file',$opts{'normcn'});
   }
-  PCAP::Cli::file_for_reading('germline-indel-bed',$opts{'germindel'});
+  PCAP::Cli::file_for_reading('germline-indel-bed',$opts{'germindel'}) if(exists $opts{'process'} && $opts{'process'} eq 'flag');
   PCAP::Cli::out_dir_check('outdir', $opts{'outdir'});
 
   PCAP::Cli::file_for_reading('flagConfig',$opts{'flagConfig'}) if(defined $opts{'flagConfig'});
   PCAP::Cli::file_for_reading('flagToVcfConfig',$opts{'flagToVcfConfig'}) if(defined $opts{'flagToVcfConfig'});
-
-  delete $opts{'process'} unless(defined $opts{'process'});
-  delete $opts{'index'} unless(defined $opts{'index'});
-  delete $opts{'limit'} unless(defined $opts{'limit'});
 
   if(defined($opts{'normprot'})){
 		my $good_prot = 0;
