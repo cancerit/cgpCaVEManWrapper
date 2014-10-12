@@ -255,7 +255,7 @@ sub setup {
   if(exists($opts{'normcn'}) && defined($opts{'normcn'})){
   	PCAP::Cli::file_for_reading('norm-cn-file',$opts{'normcn'});
   }
-  PCAP::Cli::file_for_reading('germline-indel-bed',$opts{'germindel'}) if(exists $opts{'process'} && $opts{'process'} eq 'flag');
+  PCAP::Cli::file_for_reading('germline-indel-bed',$opts{'germindel'}) if(!exists $opts{'process'} || (exists $opts{'process'} && $opts{'process'} eq 'flag'));
   PCAP::Cli::out_dir_check('outdir', $opts{'outdir'});
 
   PCAP::Cli::file_for_reading('flagConfig',$opts{'flagConfig'}) if(defined $opts{'flagConfig'});
