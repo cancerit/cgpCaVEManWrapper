@@ -92,7 +92,7 @@ my %index_max = ( 'setup' => 1,
 	  my $tmp_ref = $options->{'tmp'}."/genome.fa";
 	  unless(-e $tmp_ref) {
 	    $ref =~ s/\.fai$//;
-	    system([0,2], "(gunzip -c $ref > $tmp_ref) >& /dev/null");
+	    system([0,2], "gunzip -c $ref > $tmp_ref");
 	    copy $options->{'reference'}, "$tmp_ref.fai"; # there's no difference when decompressed.
 	  }
 	  $options->{'reference'} = "$tmp_ref.fai";
