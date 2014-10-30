@@ -121,7 +121,7 @@ else
     get_distro "htslib" $SOURCE_HTSLIB
   fi
   make -C htslib -j$CPU
-  make -C htslib prefix=$INST_PATH install
+  rm -f htslib/libhts.so*
   touch $SETUP_DIR/htslib.success
   )>>$INIT_DIR/setup.log 2>&1
 fi
@@ -146,7 +146,6 @@ fi
 done_message "" "Failed to build samtools."
 
 export SAMTOOLS="$SETUP_DIR/samtools"
-export LD_LIBRARY_PATH="$INST_PATH/lib:${LD_LIBRARY_PATH}"
 echo -n "Building CaVEMan ..."
 if [ -e $SETUP_DIR/caveman.success ]; then
   echo -n " previously installed ...";
