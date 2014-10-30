@@ -86,6 +86,17 @@ my %index_max = ( 'setup' => 1,
 	$threads->add_function('caveman_mstep', \&Sanger::CGP::Caveman::Implement::caveman_mstep);
   $threads->add_function('caveman_estep', \&Sanger::CGP::Caveman::Implement::caveman_estep);
 
+  # this is here just to make the reference usable if not the same samtools version
+  my $ref = $options->{'reference'};
+	if($ref =~ m/\.gz$/ && !-e "$ref.gzi") {
+	  my $tmp_ref = $options->{'tmp'}."/genome.fa";
+	  unless(-e $tmp_ref) {
+	    system([0,2], "(gunzip -c $options->{reference} > $tmp_ref) >& /dev/null");
+	    system("samtools faidx $tmp_ref");
+	  }
+	  $options->{'reference'} = $tmp_ref;
+	}
+
 	#Start processes in correct order, according to process (DEFAULT is caveman)
 
 	#caveman process flow
