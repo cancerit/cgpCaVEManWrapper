@@ -88,14 +88,16 @@ my %index_max = ( 'setup' => 1,
 
   # this is here just to make the reference usable if not the same samtools version
   my $ref = $options->{'reference'};
-	if($ref =~ m/\.gz$/ && !-e "$ref.gzi") {
+	if($ref =~ m/\.gz.fai$/) {
 	  my $tmp_ref = $options->{'tmp'}."/genome.fa";
 	  unless(-e $tmp_ref) {
-	    system([0,2], "(gunzip -c $options->{reference} > $tmp_ref) >& /dev/null");
-	    system("samtools faidx $tmp_ref");
+	    $ref =~ s/\.fai$//;
+	    system([0,2], "(gunzip -c $ref > $tmp_ref) >& /dev/null");
+	    copy $options->{'reference'}, "$tmp_ref.fai"; # there's no difference when decompressed.
 	  }
-	  $options->{'reference'} = $tmp_ref;
+	  $options->{'reference'} = "$tmp_ref.fai";
 	}
+
 
 	#Start processes in correct order, according to process (DEFAULT is caveman)
 
