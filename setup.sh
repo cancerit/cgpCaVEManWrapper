@@ -21,8 +21,9 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 ##########LICENCE##########
 
-CAVEMAN_CORE="https://github.com/cancerit/CaVEMan/archive/1.4.3.tar.gz"
-SOURCE_SAMTOOLS="https://github.com/samtools/samtools/archive/0.1.20.tar.gz"
+CAVEMAN_CORE="https://github.com/cancerit/CaVEMan/archive/1.5.1.tar.gz"
+SOURCE_HTSLIB="https://github.com/samtools/htslib/archive/1.1.tar.gz"
+SOURCE_SAMTOOLS="https://github.com/samtools/samtools/archive/1.1.tar.gz"
 
 
 done_message () {
@@ -71,8 +72,7 @@ cd $INIT_DIR
 unset PERL5LIB
 ARCHNAME=`perl -e 'use Config; print $Config{archname};'`
 PERLROOT=$INST_PATH/lib/perl5
-PERLARCH=$PERLROOT/$ARCHNAME
-export PERL5LIB="$PERLROOT:$PERLARCH"
+export PERL5LIB="$PERLROOT"
 
 #create a location to build dependencies
 SETUP_DIR=$INIT_DIR/install_tmp
@@ -110,24 +110,41 @@ fi
 
 #Need to add CaVEMan stuff here... will depend on samtools too (for now).
 
+echo -n "Building htslib ..."
+if [ -e $SETUP_DIR/htslib.success ]; then
+  echo -n " previously installed ...";
+else
+  cd $SETUP_DIR
+  (
+  set -xe
+  if [ ! -e htslib ]; then
+    get_distro "htslib" $SOURCE_HTSLIB
+  fi
+  make -C htslib -j$CPU
+  touch $SETUP_DIR/htslib.success
+  )>>$INIT_DIR/setup.log 2>&1
+fi
+done_message "" "Failed to build htslib."
+
+export HTSLIB="$SETUP_DIR/htslib"
+
 echo -n "Building samtools ..."
 if [ -e $SETUP_DIR/samtools.success ]; then
   echo -n " previously installed ...";
 else
   cd $SETUP_DIR
   (
-  set -x
+  set -xe
   if [ ! -e samtools ]; then
     get_distro "samtools" $SOURCE_SAMTOOLS
   fi
-  make -C samtools -j$CPU
+  make -C samtools -j$CPU HTSDIR=$SETUP_DIR/htslib
   touch $SETUP_DIR/samtools.success
   )>>$INIT_DIR/setup.log 2>&1
 fi
 done_message "" "Failed to build samtools."
 
 export SAMTOOLS="$SETUP_DIR/samtools"
-
 echo -n "Building CaVEMan ..."
 if [ -e $SETUP_DIR/caveman.success ]; then
   echo -n " previously installed ...";
@@ -187,5 +204,4 @@ echo "Please add the following to beginning of path:"
 echo "  $INST_PATH/bin"
 echo "Please add the following to beginning of PERL5LIB:"
 echo "  $PERLROOT"
-echo "  $PERLARCH"
 echo

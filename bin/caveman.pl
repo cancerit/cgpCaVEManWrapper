@@ -86,6 +86,19 @@ my %index_max = ( 'setup' => 1,
 	$threads->add_function('caveman_mstep', \&Sanger::CGP::Caveman::Implement::caveman_mstep);
   $threads->add_function('caveman_estep', \&Sanger::CGP::Caveman::Implement::caveman_estep);
 
+  # this is here just to make the reference usable if not the same samtools version
+  my $ref = $options->{'reference'};
+	if($ref =~ m/\.gz.fai$/) {
+	  my $tmp_ref = $options->{'tmp'}."/genome.fa";
+	  unless(-e $tmp_ref) {
+	    $ref =~ s/\.fai$//;
+	    system([0,2], "gunzip -c $ref > $tmp_ref");
+	    copy $options->{'reference'}, "$tmp_ref.fai"; # there's no difference when decompressed.
+	  }
+	  $options->{'reference'} = "$tmp_ref.fai";
+	}
+
+
 	#Start processes in correct order, according to process (DEFAULT is caveman)
 
 	#caveman process flow
