@@ -120,6 +120,8 @@ sub caveman_split {
 	my $command = _which('caveman') || die "Unable to find 'caveman' in path";
 	$command .= sprintf($CAVEMAN_SPLIT,$index,$config);
 
+#$command .= ' --max-read-count 1.5 --increment 1000000';
+
 	PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $command, $index);
   	return PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), $index);
 }
@@ -336,7 +338,8 @@ sub concat {
 	my $target = $options->{'target_files'};
 	return 1 if PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'), 0);
 	my $command = sprintf('cat %s > %s',$target,$out);
-	PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $command, 0);
+	my $count = "wc -l $out";
+	PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), [$command, $count], 0);
 
 	return PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), 0);
 

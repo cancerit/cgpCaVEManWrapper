@@ -25,7 +25,7 @@
 BEGIN {
   use Cwd qw(abs_path);
   use File::Basename;
-  push (@INC,dirname(abs_path($0)).'/../lib');
+  unshift (@INC,dirname(abs_path($0)).'/../lib');
 };
 
 use strict;
@@ -39,6 +39,7 @@ use Pod::Usage qw(pod2usage);
 use List::Util qw(first);
 use Const::Fast qw(const);
 use File::Copy;
+use Capture::Tiny qw(capture_stdout);
 
 use PCAP::Cli;
 use Sanger::CGP::Caveman::Implement;
@@ -65,6 +66,7 @@ const my $DEFAULT_PROTOCOL => 'WGS';
 
 my %index_max = ( 'setup' => 1,
 									'split' => -1,
+									'split_concat' => 1,
 									'mstep' => -1,
 									'merge' => 1,
 									'estep' => -1,
@@ -83,6 +85,19 @@ my %index_max = ( 'setup' => 1,
 	$threads->add_function('caveman_split', \&Sanger::CGP::Caveman::Implement::caveman_split);
 	$threads->add_function('caveman_mstep', \&Sanger::CGP::Caveman::Implement::caveman_mstep);
   $threads->add_function('caveman_estep', \&Sanger::CGP::Caveman::Implement::caveman_estep);
+
+  # this is here just to make the reference usable if not the same samtools version
+  my $ref = $options->{'reference'};
+	if($ref =~ m/\.gz.fai$/) {
+	  my $tmp_ref = $options->{'tmp'}."/genome.fa";
+	  unless(-e $tmp_ref) {
+	    $ref =~ s/\.fai$//;
+	    system([0,2], "gunzip -c $ref > $tmp_ref");
+	    copy $options->{'reference'}, "$tmp_ref.fai"; # there's no difference when decompressed.
+	  }
+	  $options->{'reference'} = "$tmp_ref.fai";
+	}
+
 
 	#Start processes in correct order, according to process (DEFAULT is caveman)
 
@@ -201,7 +216,7 @@ sub setup {
 					'tc|tumour-cn=s' => \$opts{'tumcn'},
 					'nc|normal-cn=s' => \$opts{'normcn'},
 					't|threads=i' => \$opts{'threads'},
-					'k|normal-contamination=f' => \$opts{'normcont'},
+					'k|normal-contamination=s' => \$opts{'normcont'},
 					's|species=s' => \$opts{'species'},
 					'sa|species-assembly=s' => \$opts{'species-assembly'},
 					'p|process=s' => \$opts{'process'},
@@ -235,6 +250,10 @@ sub setup {
   #check the reference is the fasta fai file.
   pod2usage(-msg  => "\nERROR: reference option (-r) does not appear to be a fasta index file.\n", -verbose => 2,  -output => \*STDERR) unless($opts{'reference'} =~ m/\.fai$/);
 
+  delete $opts{'process'} unless(defined $opts{'process'});
+  delete $opts{'index'} unless(defined $opts{'index'});
+  delete $opts{'limit'} unless(defined $opts{'limit'});
+
   #Check all files and dirs are readable and exist.
   PCAP::Cli::file_for_reading('reference',$opts{'reference'});
   PCAP::Cli::file_for_reading('tumour-bam',$opts{'tumbam'});
@@ -251,15 +270,11 @@ sub setup {
   if(exists($opts{'normcn'}) && defined($opts{'normcn'})){
   	PCAP::Cli::file_for_reading('norm-cn-file',$opts{'normcn'});
   }
-  PCAP::Cli::file_for_reading('germline-indel-bed',$opts{'germindel'});
+  PCAP::Cli::file_for_reading('germline-indel-bed',$opts{'germindel'}) if(!exists $opts{'process'} || (exists $opts{'process'} && $opts{'process'} eq 'flag'));
   PCAP::Cli::out_dir_check('outdir', $opts{'outdir'});
 
   PCAP::Cli::file_for_reading('flagConfig',$opts{'flagConfig'}) if(defined $opts{'flagConfig'});
   PCAP::Cli::file_for_reading('flagToVcfConfig',$opts{'flagToVcfConfig'}) if(defined $opts{'flagToVcfConfig'});
-
-  delete $opts{'process'} unless(defined $opts{'process'});
-  delete $opts{'index'} unless(defined $opts{'index'});
-  delete $opts{'limit'} unless(defined $opts{'limit'});
 
   if(defined($opts{'normprot'})){
 		my $good_prot = 0;
@@ -286,7 +301,24 @@ sub setup {
   # now safe to apply defaults
 	$opts{'threads'} = 1 unless(defined $opts{'threads'});
 
-	$opts{'normcont'} = 0.1 unless(defined $opts{'normcont'});
+	if(defined $opts{'normcont'}) {
+	  if(-e $opts{'normcont'}) {
+	    pod2usage(-msg => "\nERROR: '-k' appears to be an empty file.\n", -verbose => 2,  -output => \*STDERR) if(-s _ == 0);
+	    my $value = capture_stdout{ system(qq{grep -F 'NormalContamination' $opts{normcont}}); };
+	    chomp $value;
+	    if($value =~ m/^NormalContamination\s([[:digit:]]\.?[[:digit:]]*)$/) {
+	      $opts{'normcont'} = $1;
+	    }
+	    else {
+	      pod2usage(-msg => "\nERROR: Failed to get normal-contamination from $opts{normcont} file.\n", -verbose => 2,  -output => \*STDERR);
+	    }
+	  }
+	}
+	else {
+	  $opts{'normcont'} = 0.1;
+	}
+
+	pod2usage(-msg => "\nERROR: normal-contamination should be <1 even if from ASCAT.samplestatistics.csv file ($opts{normcont}).\n", -verbose => 2,  -output => \*STDERR) unless($opts{'normcont'} =~ m/^0\.?[[:digit:]]*$/);
 
 	#Create the results directory in the output directory given.
 	my $tmpdir = File::Spec->catdir($opts{'outdir'}, 'tmpCaveman');
@@ -345,10 +377,10 @@ sub setup {
   }
 
   make_path($tmpdir) unless(-d $tmpdir);
-	make_path($resultsdir) unless(-d $resultsdir);
-	make_path($progress) unless(-d $progress);
-	make_path($logs) unless(-d $logs);
-	return \%opts;
+  make_path($resultsdir) unless(-d $resultsdir);
+  make_path($progress) unless(-d $progress);
+  make_path($logs) unless(-d $logs);
+  return \%opts;
 }
 
 __END__
@@ -373,7 +405,7 @@ caveman.pl [options]
     -species-assembly  -sa  Species assembly for (output in VCF)
     -flag-bed-files    -b   Bed file location for flagging (eg dbSNP.bed NB must be sorted.)
     -germline-indel    -in  Location of germline indel bedfile
-    -unmatched-vcf     -u   Directory containing unmatched normal VCF files
+    -unmatched-vcf     -u   Directory containing unmatched normal VCF files or http/ftp base URL
     -seqType           -st  Sequencing type (genomic|pulldown)
 
    Optional parameters:
@@ -383,7 +415,6 @@ caveman.pl [options]
     -logs                  -g   Location to write logs (default is ./logs)
     -normal-protocol       -np  Normal protocol [WGS|WXS|RNA] (default WGS)
     -tumour-protocol       -tp  Tumour protocol [WGS|WXS|RNA] (default WGS)
-    -normal-contamination  -k   Normal contamination value (default 0.1)
     -threads               -t   Number of threads allowed on this machine (default 1)
 
   Optional flagging parameters: [default to those found in cgpCaVEManPostProcessing]
