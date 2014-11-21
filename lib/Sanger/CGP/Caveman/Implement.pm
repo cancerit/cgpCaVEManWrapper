@@ -197,6 +197,13 @@ sub caveman_estep{
                     $config,
                     $normprot,
                     $tumprot);
+    if(exists() && defined()){ #Add default normal cn
+      $command .= ' -n '.$options->{'normdefcn'};
+    }
+
+    if(exists() && defined()){ #Add default tumour cn
+      $command .= ' -t '.$options->{'tumdefcn'};
+    }
 
     PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $command, $index);
     PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), $index);
