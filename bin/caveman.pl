@@ -213,6 +213,8 @@ sub setup {
 					'u|unmatched-vcf=s' => \$opts{'unmatchedvcf'},
 					'np|normal-protocol=s' => \$opts{'normprot'},
 					'tp|tumour-protocol=s' => \$opts{'tumprot'},
+					'td|tum-cn-default=i' => \$opts{'tumdefcn'},
+					'nd|norm-cn-default=i' => \$opts{'normdefcn'},
 					'c|flagConfig=s' => \$opts{'flagConfig'},
 					'f|flagToVcfConfig=s' => \$opts{'flagToVcfConfig'},
 					'st|seqType=s' => \$opts{'seqType'},
@@ -419,6 +421,14 @@ Path to mapped, indexed, duplicate marked/removed tumour bam file.
 =item B<-normal-bam>
 
 Path to mapped, indexed, duplicate marked/removed normal bam file.
+
+=item B<-tum-cn-default>
+
+Default copy number to use to fill in gaps in the tumour copy number file [default: 2]
+
+=item B<-norm-cn-default>
+
+Default copy number to use to fill in gaps in the normal copy number file [default: 2]
 
 =item B<-ignore-file>
 
