@@ -204,14 +204,12 @@ sub cleanup{
 
 sub getSpeciesAssemblyFromBam{
   my ($opts) = @_;
-  $opts->{'species'};
-  $opts->{'species-assembly'};
   my ($species,$assembly) = undef;
   my $bam = Bio::DB::Sam->new(-bam  =>$opts->{'tumbam'});
   my $head = $bam->header->text;
   my @split_head = split(/\n/,$head);
   foreach my $line(@split_head){
-    if($line =~ m/^@SQ/){
+    if($line =~ m/^\@SQ/){
       $assembly = $line =~ /AS:([^\t]+)/;
       $species = $line =~ /SP:([^\t]+)/;
       last;
