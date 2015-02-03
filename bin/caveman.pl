@@ -202,6 +202,40 @@ sub cleanup{
 	return 0;
 }
 
+sub getSpeciesAssemblyFromBam{
+  my ($opts) = @_;
+  $opts->{'species'};
+  $opts->{'species-assembly'};
+  my ($species,$assembly) = undef;
+  my $bam = Bio::DB::Sam->new(-bam  =>$opts->{'tumbam'});
+  my $head = $bam->header->text;
+  my @split_head = split(/\n/,$head);
+  foreach my $line(@split_head){
+    if($line =~ m/^@SQ/){
+      $assembly = $line =~ /AS:([^\t]+)/;
+      $species = $line =~ /SP:([^\t]+)/;
+      last;
+    }
+  }
+  if(defined($opts->{'species'})){
+    if(defined($species)){
+      warn "Species defined at commandline (".$opts->{'species'}.") does not match that in the BAM file ($species). Defaulting to BAM file valie.\n" if($species ne $opts->{'species'});
+    }else{
+      $species = $opts->{'species'};
+    }
+  }
+  if(defined($opts->{'species-assembly'})){
+    if(defined($assembly)){
+      warn "Assembly defined at commandline (".$opts->{'species-assembly'}.") does not match that in the BAM file ($assembly). Defaulting to BAM file valie.\n" if($assembly ne $opts->{'species-assembly'});
+    }else{
+      $species = $opts->{'species-assembly'};
+    }
+  }
+  $opts->{'species'} = $species;
+  $opts->{'species-assembly'} = $assembly;
+  return;
+}
+
 
 sub setup {
   my %opts;
@@ -243,17 +277,6 @@ sub setup {
   for(keys %opts) { $defined++ if(defined $opts{$_}); }
   pod2usage(-msg  => "\nERROR: Options must be defined.\n", -verbose => 2,  -output => \*STDERR) unless($defined);
 
-	pod2usage(-msg  => "\nERROR: 'species' must be defined.\n", -verbose => 2,  -output => \*STDERR) unless(defined $opts{'species'});
-	pod2usage(-msg  => "\nERROR: 'species-assembly' must be defined.\n", -verbose => 2,  -output => \*STDERR) unless(defined $opts{'species-assembly'});
-	pod2usage(-msg  => "\nERROR: 'seqType' must be defined.\n", -verbose => 2,  -output => \*STDERR) unless(defined $opts{'seqType'});
-
-  #check the reference is the fasta fai file.
-  pod2usage(-msg  => "\nERROR: reference option (-r) does not appear to be a fasta index file.\n", -verbose => 2,  -output => \*STDERR) unless($opts{'reference'} =~ m/\.fai$/);
-
-  delete $opts{'process'} unless(defined $opts{'process'});
-  delete $opts{'index'} unless(defined $opts{'index'});
-  delete $opts{'limit'} unless(defined $opts{'limit'});
-
   #Check all files and dirs are readable and exist.
   PCAP::Cli::file_for_reading('reference',$opts{'reference'});
   PCAP::Cli::file_for_reading('tumour-bam',$opts{'tumbam'});
@@ -275,6 +298,21 @@ sub setup {
 
   PCAP::Cli::file_for_reading('flagConfig',$opts{'flagConfig'}) if(defined $opts{'flagConfig'});
   PCAP::Cli::file_for_reading('flagToVcfConfig',$opts{'flagToVcfConfig'}) if(defined $opts{'flagToVcfConfig'});
+
+
+  #Get bam header, species/assembly
+  getSpeciesAssemblyFromBam(\%opts);
+
+	pod2usage(-msg  => "\nERROR: 'species' must be defined, see BAM header /options.\n", -verbose => 2,  -output => \*STDERR) unless(defined $opts{'species'});
+	pod2usage(-msg  => "\nERROR: 'species-assembly' must be defined, see BAM header /options.\n", -verbose => 2,  -output => \*STDERR) unless(defined $opts{'species-assembly'});
+	pod2usage(-msg  => "\nERROR: 'seqType' must be defined.\n", -verbose => 2,  -output => \*STDERR) unless(defined $opts{'seqType'});
+
+  #check the reference is the fasta fai file.
+  pod2usage(-msg  => "\nERROR: reference option (-r) does not appear to be a fasta index file.\n", -verbose => 2,  -output => \*STDERR) unless($opts{'reference'} =~ m/\.fai$/);
+
+  delete $opts{'process'} unless(defined $opts{'process'});
+  delete $opts{'index'} unless(defined $opts{'index'});
+  delete $opts{'limit'} unless(defined $opts{'limit'});
 
   if(defined($opts{'normprot'})){
 		my $good_prot = 0;
