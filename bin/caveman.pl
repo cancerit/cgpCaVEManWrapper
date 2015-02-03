@@ -269,8 +269,8 @@ sub setup {
 					'st|seqType=s' => \$opts{'seqType'},
   ) or pod2usage(2);
 
-  pod2usage(-message => PCAP::license, -verbose => 2) if(defined $opts{'h'});
-  pod2usage(-message => PCAP::license, -verbose => 1) if(defined $opts{'m'});
+  pod2usage(-message => PCAP::license, -verbose => 1) if(defined $opts{'h'});
+  pod2usage(-message => PCAP::license, -verbose => 2) if(defined $opts{'m'});
 
   # then check for no args:
   my $defined;
@@ -453,7 +453,6 @@ caveman.pl [options]
     -logs                  -g   Location to write logs (default is ./logs)
     -normal-protocol       -np  Normal protocol [WGS|WXS|RNA] (default WGS)
     -tumour-protocol       -tp  Tumour protocol [WGS|WXS|RNA] (default WGS)
-    -threads               -t   Number of threads allowed on this machine (default 1)
     -tum-cn-default        -td  Default tumour CN to use with gaps or no file provided
     -norm-cn-default       -nd  Default normal CN to use with gaps or no file provided
 
