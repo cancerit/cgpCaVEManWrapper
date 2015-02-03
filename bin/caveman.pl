@@ -416,6 +416,8 @@ caveman.pl [options]
     -normal-protocol       -np  Normal protocol [WGS|WXS|RNA] (default WGS)
     -tumour-protocol       -tp  Tumour protocol [WGS|WXS|RNA] (default WGS)
     -threads               -t   Number of threads allowed on this machine (default 1)
+    -tum-cn-default        -td  Default tumour CN to use with gaps or no file provided
+    -norm-cn-default       -nd  Default normal CN to use with gaps or no file provided
 
   Optional flagging parameters: [default to those found in cgpCaVEManPostProcessing]
     -flagConfig            -c   Config ini file to use for flag list and settings
