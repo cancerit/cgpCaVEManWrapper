@@ -1,6 +1,7 @@
 bin/caveman.pl
 bin/caveman_merge_results.pl
 bin/cpanm
+caveman.setup
 docs.tar.gz
 lib/Sanger/CGP/Caveman.pm
 lib/Sanger/CGP/Caveman/Implement.pm
