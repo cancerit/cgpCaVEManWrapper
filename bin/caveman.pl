@@ -204,33 +204,30 @@ sub cleanup{
 
 sub getSpeciesAssemblyFromBam{
   my ($opts) = @_;
-  my ($species,$assembly) = undef;
+  my ($species,$assembly);
   my $bam = Bio::DB::Sam->new(-bam  =>$opts->{'tumbam'});
   my $head = $bam->header->text;
   my @split_head = split(/\n/,$head);
   foreach my $line(@split_head){
     if($line =~ m/^\@SQ/){
-      $assembly = $line =~ /AS:([^\t]+)/;
-      $species = $line =~ /SP:([^\t]+)/;
+      ($assembly) = $line =~ /AS:([^\t]+)/;
+      ($species) = $line =~ /SP:([^\t]+)/;
       last;
     }
   }
+
   if(defined($opts->{'species'})){
     if(defined($species)){
-      warn "Species defined at commandline (".$opts->{'species'}.") does not match that in the BAM file ($species). Defaulting to BAM file valie.\n" if($species ne $opts->{'species'});
-    }else{
-      $species = $opts->{'species'};
+      warn "Species defined at commandline (".$opts->{'species'}.") does not match that in the BAM file ($species). Defaulting to BAM file value.\n" if($species ne $opts->{'species'});
+      $opts->{'species'} = $species;
     }
   }
   if(defined($opts->{'species-assembly'})){
     if(defined($assembly)){
-      warn "Assembly defined at commandline (".$opts->{'species-assembly'}.") does not match that in the BAM file ($assembly). Defaulting to BAM file valie.\n" if($assembly ne $opts->{'species-assembly'});
-    }else{
-      $species = $opts->{'species-assembly'};
+      warn "Assembly defined at commandline (".$opts->{'species-assembly'}.") does not match that in the BAM file ($assembly). Defaulting to BAM file value.\n" if($assembly ne $opts->{'species-assembly'});
+      $opts->{'species-assembly'} = $assembly;
     }
   }
-  $opts->{'species'} = $species;
-  $opts->{'species-assembly'} = $assembly;
   return;
 }
 
@@ -301,8 +298,8 @@ sub setup {
   #Get bam header, species/assembly
   getSpeciesAssemblyFromBam(\%opts);
 
-	pod2usage(-msg  => "\nERROR: 'species' must be defined, see BAM header /options.\n", -verbose => 2,  -output => \*STDERR) unless(defined $opts{'species'});
-	pod2usage(-msg  => "\nERROR: 'species-assembly' must be defined, see BAM header /options.\n", -verbose => 2,  -output => \*STDERR) unless(defined $opts{'species-assembly'});
+	pod2usage(-msg  => "\nERROR: 'species' must be defined, see BAM header options.\n", -verbose => 2,  -output => \*STDERR) unless(defined $opts{'species'});
+	pod2usage(-msg  => "\nERROR: 'species-assembly' must be defined, see BAM header options.\n", -verbose => 2,  -output => \*STDERR) unless(defined $opts{'species-assembly'});
 	pod2usage(-msg  => "\nERROR: 'seqType' must be defined.\n", -verbose => 2,  -output => \*STDERR) unless(defined $opts{'seqType'});
 
   #check the reference is the fasta fai file.
