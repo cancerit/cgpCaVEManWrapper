@@ -279,6 +279,10 @@ sub caveman_flag{
 							);
 	$flag .= ' -c '.$options->{'flagConfig'} if(defined $options->{'flagConfig'});
 	$flag .= ' -v '.$options->{'flagToVcfConfig'} if(defined $options->{'flagToVcfConfig'});
+	if($options->{'seqType'} eq 'pulldown') {
+	  die "ERROR: Pulldown flagging requires annotation BED files" unless(defined $options->{'annot-bed'});
+	  $flag .= ' -ab '.$options->{'annot-bed'};
+	}
 
   my $vcf_gz = $flagged.'.gz';
   my $bgzip = _which('bgzip');

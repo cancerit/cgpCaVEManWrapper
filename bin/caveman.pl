@@ -60,6 +60,7 @@ const my $IDS_SNPS => q{%s.snps.ids.vcf};
 const my $IDS_SNPS_GZ => q{%s.snps.ids.vcf.gz};
 const my $IDS_SNPS_TBI => q{%s.snps.ids.vcf.gz.tbi};
 const my $NO_ANALYSIS => q{%s.no_analysis.bed};
+const my $SP_ASS_MESSAGE => qq{%s defined at commandline (%s) does not match that in the BAM file (%s). Defaulting to BAM file value.\n};
 
 const my @VALID_PROTOCOLS => qw(WGS WXS RNA);
 const my $DEFAULT_PROTOCOL => 'WGS';
@@ -204,33 +205,26 @@ sub cleanup{
 
 sub getSpeciesAssemblyFromBam{
   my ($opts) = @_;
-  my ($species,$assembly) = undef;
   my $bam = Bio::DB::Sam->new(-bam  =>$opts->{'tumbam'});
   my $head = $bam->header->text;
   my @split_head = split(/\n/,$head);
   foreach my $line(@split_head){
     if($line =~ m/^\@SQ/){
-      $assembly = $line =~ /AS:([^\t]+)/;
-      $species = $line =~ /SP:([^\t]+)/;
+      if($line =~ /AS:([^\t]+)/) {
+        my $assembly = $1;
+        warn sprintf $SP_ASS_MESSAGE, 'Assembly', $opts->{'species-assembly'}, $assembly
+          if(defined $opts->{'species-assembly'} && $opts->{'species-assembly'} ne $assembly);
+        $opts->{'species-assembly'} = $assembly;
+      }
+      if($line =~ /SP:([^\t]+)/) {
+        my $species = $1;
+        warn sprintf $SP_ASS_MESSAGE, 'Species', $opts->{'species'}, $species
+          if(defined $opts->{'species'} && $opts->{'species'} ne $species);
+        $opts->{'species'} = $species;
+      }
       last;
     }
   }
-  if(defined($opts->{'species'})){
-    if(defined($species)){
-      warn "Species defined at commandline (".$opts->{'species'}.") does not match that in the BAM file ($species). Defaulting to BAM file valie.\n" if($species ne $opts->{'species'});
-    }else{
-      $species = $opts->{'species'};
-    }
-  }
-  if(defined($opts->{'species-assembly'})){
-    if(defined($assembly)){
-      warn "Assembly defined at commandline (".$opts->{'species-assembly'}.") does not match that in the BAM file ($assembly). Defaulting to BAM file valie.\n" if($assembly ne $opts->{'species-assembly'});
-    }else{
-      $species = $opts->{'species-assembly'};
-    }
-  }
-  $opts->{'species'} = $species;
-  $opts->{'species-assembly'} = $assembly;
   return;
 }
 
@@ -256,6 +250,7 @@ sub setup {
 					'i|index=i' => \$opts{'index'},
 					'l|limit=i' => \$opts{'limit'},
 					'b|flag-bed-files=s' => \$opts{'flag-bed'},
+					'ab|annot-bed-files=s' => \$opts{'annot-bed'},
 					'in|germline-indel=s' => \$opts{'germindel'},
 					'u|unmatched-vcf=s' => \$opts{'unmatchedvcf'},
 					'np|normal-protocol=s' => \$opts{'normprot'},
@@ -301,8 +296,8 @@ sub setup {
   #Get bam header, species/assembly
   getSpeciesAssemblyFromBam(\%opts);
 
-	pod2usage(-msg  => "\nERROR: 'species' must be defined, see BAM header /options.\n", -verbose => 2,  -output => \*STDERR) unless(defined $opts{'species'});
-	pod2usage(-msg  => "\nERROR: 'species-assembly' must be defined, see BAM header /options.\n", -verbose => 2,  -output => \*STDERR) unless(defined $opts{'species-assembly'});
+	pod2usage(-msg  => "\nERROR: 'species' must be defined, see BAM header options.\n", -verbose => 2,  -output => \*STDERR) unless(defined $opts{'species'});
+	pod2usage(-msg  => "\nERROR: 'species-assembly' must be defined, see BAM header options.\n", -verbose => 2,  -output => \*STDERR) unless(defined $opts{'species-assembly'});
 	pod2usage(-msg  => "\nERROR: 'seqType' must be defined.\n", -verbose => 2,  -output => \*STDERR) unless(defined $opts{'seqType'});
 
   #check the reference is the fasta fai file.
@@ -453,6 +448,7 @@ caveman.pl [options]
     -tumour-protocol       -tp  Tumour protocol [WGS|WXS|RNA] (default WGS)
     -tum-cn-default        -td  Default tumour CN to use with gaps or no file provided
     -norm-cn-default       -nd  Default normal CN to use with gaps or no file provided
+    -annot-bed-files       -ab  Annotation BED files - required for pulldown/WXS
 
   Optional flagging parameters: [default to those found in cgpCaVEManPostProcessing]
     -flagConfig            -c   Config ini file to use for flag list and settings
