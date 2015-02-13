@@ -250,6 +250,7 @@ sub setup {
 					'i|index=i' => \$opts{'index'},
 					'l|limit=i' => \$opts{'limit'},
 					'b|flag-bed-files=s' => \$opts{'flag-bed'},
+					'ab|annot-bed-files=s' => \$opts{'annot-bed'},
 					'in|germline-indel=s' => \$opts{'germindel'},
 					'u|unmatched-vcf=s' => \$opts{'unmatchedvcf'},
 					'np|normal-protocol=s' => \$opts{'normprot'},
@@ -447,6 +448,7 @@ caveman.pl [options]
     -tumour-protocol       -tp  Tumour protocol [WGS|WXS|RNA] (default WGS)
     -tum-cn-default        -td  Default tumour CN to use with gaps or no file provided
     -norm-cn-default       -nd  Default normal CN to use with gaps or no file provided
+    -annot-bed-files       -ab  Annotation BED files - required for pulldown/WXS
 
   Optional flagging parameters: [default to those found in cgpCaVEManPostProcessing]
     -flagConfig            -c   Config ini file to use for flag list and settings
