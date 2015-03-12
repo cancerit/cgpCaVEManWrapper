@@ -121,6 +121,7 @@ my %index_max = ( 'setup' => 1,
 	}
 
 	my $split_count = Sanger::CGP::Caveman::Implement::file_line_count($options->{'splitList'}) if(!exists $options->{'process'} || first { $options->{'process'} eq $_ } ('mstep', 'estep'));
+	$split_count = $options->{'limit'} if(exists $options->{'limit'} && defined $options->{'limit'});
 	#Split & concatenate has succeeded in running, so now count the number of split files.
 	if(!exists $options->{'process'} || $options->{'process'} eq 'mstep'){
 		#Run the mstep with number of split jobs.
