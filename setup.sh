@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ##########LICENCE##########
-#  Copyright (c) 2014 Genome Research Ltd.
+#  Copyright (c) 2014,2015 Genome Research Ltd.
 #
 #  Author: David Jones <cgpit@sanger.ac.uk>
 #
@@ -22,9 +22,6 @@
 ##########LICENCE##########
 
 CAVEMAN_CORE="https://github.com/cancerit/CaVEMan/archive/1.6.1.tar.gz"
-SOURCE_HTSLIB="https://github.com/samtools/htslib/archive/1.1.tar.gz"
-SOURCE_SAMTOOLS="https://github.com/samtools/samtools/archive/1.1.tar.gz"
-
 
 done_message () {
     if [ $? -eq 0 ]; then
@@ -108,43 +105,6 @@ if [ ! -e $PERLROOT/Sanger/CGP/CavemanPostProcessor.pm ]; then
 fi
 
 
-#Need to add CaVEMan stuff here... will depend on samtools too (for now).
-
-echo -n "Building htslib ..."
-if [ -e $SETUP_DIR/htslib.success ]; then
-  echo -n " previously installed ...";
-else
-  cd $SETUP_DIR
-  (
-  set -xe
-  if [ ! -e htslib ]; then
-    get_distro "htslib" $SOURCE_HTSLIB
-  fi
-  make -C htslib -j$CPU
-  touch $SETUP_DIR/htslib.success
-  )>>$INIT_DIR/setup.log 2>&1
-fi
-done_message "" "Failed to build htslib."
-
-export HTSLIB="$SETUP_DIR/htslib"
-
-echo -n "Building samtools ..."
-if [ -e $SETUP_DIR/samtools.success ]; then
-  echo -n " previously installed ...";
-else
-  cd $SETUP_DIR
-  (
-  set -xe
-  if [ ! -e samtools ]; then
-    get_distro "samtools" $SOURCE_SAMTOOLS
-  fi
-  make -C samtools -j$CPU HTSDIR=$SETUP_DIR/htslib
-  touch $SETUP_DIR/samtools.success
-  )>>$INIT_DIR/setup.log 2>&1
-fi
-done_message "" "Failed to build samtools."
-
-export SAMTOOLS="$SETUP_DIR/samtools"
 echo -n "Building CaVEMan ..."
 if [ -e $SETUP_DIR/caveman.success ]; then
   echo -n " previously installed ...";
@@ -155,12 +115,8 @@ else
   if [ ! -e caveman ]; then
     get_distro "caveman" $CAVEMAN_CORE
   fi
-  make -C caveman clean
-  make -C caveman -j$CPU
-  cp caveman/bin/caveman $INST_PATH/bin/.
-  cp caveman/bin/generateCavemanUMNormVCF $INST_PATH/bin/.
-  cp caveman/bin/removeVCFPanelRefLines.pl $INST_PATH/bin/.
-  cp caveman/bin/mergeCavemanResults $INST_PATH/bin/.
+  cd caveman
+  ./setup.sh $INST_PATH
   touch $SETUP_DIR/caveman.success
   )>>$INIT_DIR/setup.log 2>&1
 fi
