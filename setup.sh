@@ -117,6 +117,8 @@ else
   fi
   cd caveman
   ./setup.sh $INST_PATH
+  cp scripts/mergeCavemanResults $INST_PATH/bin/.
+  chmod a+x $INST_PATH/bin/mergeCavemanResults
   touch $SETUP_DIR/caveman.success
   )>>$INIT_DIR/setup.log 2>&1
 fi
