@@ -260,6 +260,7 @@ sub setup {
 					'nd|norm-cn-default=i' => \$opts{'normdefcn'},
 					'c|flagConfig=s' => \$opts{'flagConfig'},
 					'f|flagToVcfConfig=s' => \$opts{'flagToVcfConfig'},
+					'a|apid=i' => \$opts{'apid'},
 					'st|seqType=s' => \$opts{'seqType'},
   ) or pod2usage(2);
 
@@ -451,6 +452,7 @@ caveman.pl [options]
     -tum-cn-default        -td  Default tumour CN to use with gaps or no file provided
     -norm-cn-default       -nd  Default normal CN to use with gaps or no file provided
     -annot-bed-files       -ab  Annotation BED files - required for pulldown/WXS
+    -apid                  -a   Analysis process ID
 
   Optional flagging parameters: [default to those found in cgpCaVEManPostProcessing]
     -flagConfig            -c   Config ini file to use for flag list and settings
@@ -499,6 +501,10 @@ Default copy number to use to fill in gaps in the normal copy number file [defau
 =item B<-ignore-file>
 
 Path to ignore file. 1-based first coordinate bed style format of regions for caveman not to analyse.
+
+=item B<-apid>
+
+Analysis process ID (CGP)
 
 =item B<-tumour-cn>
 
