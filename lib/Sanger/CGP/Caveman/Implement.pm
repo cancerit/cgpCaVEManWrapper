@@ -266,19 +266,21 @@ sub caveman_flag{
 	my $script = _which($FLAG_SCRIPT) || die "Unable to find '$FLAG_SCRIPT' in path";
 	my $flag = $^X.' '.$script;
 	$flag .= sprintf($CAVEMAN_FLAG,
-							$for_flagging,
-							$flagged,
-							$options->{'species'},
-							$tumbam,
-							$normbam,
-							$options->{'flag-bed'},
-							$options->{'germindel'},
-							$options->{'unmatchedvcf'},
-							$ref,
-							$options->{'seqType'},
-							);
+            $for_flagging,
+            $flagged,
+            $options->{'species'},
+            $tumbam,
+            $normbam,
+            $options->{'flag-bed'},
+            $options->{'germindel'},
+            $options->{'unmatchedvcf'},
+            $ref,
+            $options->{'seqType'}
+            );
+
 	$flag .= ' -c '.$options->{'flagConfig'} if(defined $options->{'flagConfig'});
 	$flag .= ' -v '.$options->{'flagToVcfConfig'} if(defined $options->{'flagToVcfConfig'});
+	$flag .= ' -p '.$options->{'apid'} if(defined $options->{'apid'});
 	if($options->{'seqType'} eq 'pulldown') {
 	  die "ERROR: Pulldown flagging requires annotation BED files" unless(defined $options->{'annot-bed'});
 	  $flag .= ' -ab '.$options->{'annot-bed'};
