@@ -235,6 +235,7 @@ sub setup {
   GetOptions(
   				'h|help' => \$opts{'h'},
 					'm|man' => \$opts{'m'},
+					'v|version' => \$opts{'v'},
 					'r|reference=s' => \$opts{'reference'},
 					'o|outdir=s' => \$opts{'outdir'},
 					'tb|tumour-bam=s' => \$opts{'tumbam'},
@@ -264,8 +265,12 @@ sub setup {
 					'st|seqType=s' => \$opts{'seqType'},
   ) or pod2usage(2);
 
-  pod2usage(-message => PCAP::license, -verbose => 1) if(defined $opts{'h'});
-  pod2usage(-message => PCAP::license, -verbose => 2) if(defined $opts{'m'});
+  pod2usage(-verbose => 1) if(defined $opts{'h'});
+  pod2usage(-verbose => 2) if(defined $opts{'m'});
+  if(defined $opts{'v'}) {
+    print sprintf "VERSION: %s\n", Sanger::CGP::Caveman->VERSION;
+    exit 0;
+  }
 
   # then check for no args:
   my $defined;
@@ -464,6 +469,7 @@ caveman.pl [options]
     -index                 -i   Optionally restrict '-p' to single job
 
   Other:
+    -version               -v   Version
     -help                  -h   Brief help message.
     -man                   -m   Full documentation.
 
