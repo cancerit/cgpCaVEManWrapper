@@ -193,7 +193,7 @@ sub caveman_estep{
                     $cov_arr,
                     $prob_arr,
                     $options->{'species-assembly'},
-                    $options->{'species'},
+                    q{'}.$options->{'species'}.q{'},
                     $config,
                     $normprot,
                     $tumprot);
@@ -268,7 +268,7 @@ sub caveman_flag{
 	$flag .= sprintf($CAVEMAN_FLAG,
             $for_flagging,
             $flagged,
-            $options->{'species'},
+            q{'}.$options->{'species'}.q{'},
             $tumbam,
             $normbam,
             $options->{'flag-bed'},
