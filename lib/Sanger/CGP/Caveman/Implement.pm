@@ -42,7 +42,7 @@ const my $CAVEMAN_MSTEP => q{ mstep -i %d -f %s};
 const my $CAVEMAN_MERGE => q{ merge -c %s -p %s -f %s};
 const my $CAVEMAN_ESTEP => q{ estep -i %d -k %f -g %s -o %s -v %s -w %s -f %s -l %s -r %s};
 const my $CAVEMAN_FLAG => q{ -i %s -o %s -s %s -m %s -n %s -b %s -g %s -umv %s -ref %s -t %s};
-const my $MERGE_CAVEMAN_RESULTS => q{ mergeCavemanResults -o %s %s};
+const my $MERGE_CAVEMAN_RESULTS => q{ mergeCavemanResults -s %s -o %s %s};
 const my $CAVEMAN_VCF_IDS => q{ -i %s -o %s};
 
 const my $FLAG_SCRIPT => q{cgpFlagCaVEMan.pl};
@@ -216,18 +216,19 @@ sub caveman_merge_results {
 	my $options = shift;
 	my $tmp = $options->{'tmp'};
 	my $out = $options->{'out_file'};
+	my $splitList = File::Spec->catfile($tmp, 'splitList');
 	my $target = $options->{'subvcf'};
-	my $command = sprintf($MERGE_CAVEMAN_RESULTS,$out.".muts.vcf",$target);
+	my $command = sprintf($MERGE_CAVEMAN_RESULTS,$splitList,$out.".muts.vcf",$target);
 	PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $command, 0)
 								unless (PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'), 'merge_muts', 0));
 	PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), 'merge_muts', 0);
 	$target = $options->{'snpvcf'};
-	$command = sprintf($MERGE_CAVEMAN_RESULTS,$out.".snps.vcf",$target);
+	$command = sprintf($MERGE_CAVEMAN_RESULTS,$splitList,$out.".snps.vcf",$target);
 	PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $command, 0)
 								unless (PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'), 'merge_snps', 0));
 	PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), 'merge_snps', 0);
 	$target = $options->{'noanalysisbed'};
-	$command = sprintf($MERGE_CAVEMAN_RESULTS,$out.".no_analysis.bed",$target);
+	$command = sprintf($MERGE_CAVEMAN_RESULTS,$splitList,$out.".no_analysis.bed",$target);
 	PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $command, 0)
 								unless (PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'), 'merge_no_analysis', 0));
 	PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), 'merge_no_analysis', 0);

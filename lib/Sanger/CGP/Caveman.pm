@@ -1,7 +1,7 @@
 package Sanger::CGP::Caveman;
 
 ##########LICENCE##########
-#  Copyright (c) 2014 Genome Research Ltd.
+#  Copyright (c) 2014-2015 Genome Research Ltd.
 #
 #  Author: David Jones <cgpit@sanger.ac.uk>
 #
@@ -26,6 +26,6 @@ package Sanger::CGP::Caveman;
 use strict;
 use Const::Fast qw(const);
 
-our $VERSION = '1.7.0';
+our $VERSION = '1.7.1';
 
 1;
