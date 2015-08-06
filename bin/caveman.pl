@@ -385,10 +385,10 @@ sub setup {
 
   $opts{'splitList'} = File::Spec->catfile($opts{'tmp'},"splitList");
 	#vcf concat subs & snps
-  $opts{'subvcf'} = File::Spec->catfile($opts{'tmp'},"results/*/*.muts.vcf");
-  $opts{'snpvcf'} = File::Spec->catfile($opts{'tmp'},"results/*/*.snps.vcf");
+  $opts{'subvcf'} = File::Spec->catfile($opts{'tmp'},"results/%/%.muts.vcf");
+  $opts{'snpvcf'} = File::Spec->catfile($opts{'tmp'},"results/%/%.snps.vcf");
 	#bed concat no_analysis
-  $opts{'noanalysisbed'} = File::Spec->catfile($opts{'tmp'},"results/*/*.no_analysis.bed");
+  $opts{'noanalysisbed'} = File::Spec->catfile($opts{'tmp'},"results/%/%.no_analysis.bed");
 
 	if(exists $opts{'process'}) {
     PCAP::Cli::valid_process('process', $opts{'process'}, \@VALID_PROCESS);

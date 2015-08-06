@@ -26,6 +26,6 @@ package Sanger::CGP::Caveman;
 use strict;
 use Const::Fast qw(const);
 
-our $VERSION = '1.7.1';
+our $VERSION = '1.7.2';
 
 1;
