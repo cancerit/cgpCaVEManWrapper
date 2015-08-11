@@ -287,11 +287,28 @@ sub setup {
   PCAP::Cli::file_for_reading('tumour-bai',$tumidx);
   PCAP::Cli::file_for_reading('normal-bai',$normidx);
   PCAP::Cli::file_for_reading('ignore-file',$opts{'ignore'});
+
   if(exists($opts{'tumcn'}) && defined($opts{'tumcn'})){
-  	PCAP::Cli::file_for_reading('tum-cn-file',$opts{'tumcn'});
+    if(-e $opts{'tumcn'}) {
+      if(-s $opts{'tumcn'} == 0 && (!exists $opts{'tumdefcn'} || !defined $opts{'tumdefcn'})) {
+        pod2usage(-msg  => "\nERROR: when file supplied for 'tum-cn-file' is empty 'tum-cn-default' must be specified.\n", -verbose => 2,  -output => \*STDERR)
+      }
+    }
+    else {
+      pod2usage(-msg  => "\nERROR: 'tum-cn-file' must point to a file.\n", -verbose => 2,  -output => \*STDERR)
+    }
   }
+
+
   if(exists($opts{'normcn'}) && defined($opts{'normcn'})){
-  	PCAP::Cli::file_for_reading('norm-cn-file',$opts{'normcn'});
+    if(-e $opts{'normcn'}) {
+      if(-s $opts{'normcn'} == 0 && (!exists $opts{'normdefcn'} || !defined $opts{'normdefcn'})) {
+        pod2usage(-msg  => "\nERROR: when file supplied for 'norm-cn-file' is empty 'norm-cn-default' must be specified.\n", -verbose => 2,  -output => \*STDERR)
+      }
+    }
+    else {
+      pod2usage(-msg  => "\nERROR: 'norm-cn-file' must point to a file.\n", -verbose => 2,  -output => \*STDERR)
+    }
   }
 
   delete $opts{'process'} unless(defined $opts{'process'});
@@ -439,7 +456,9 @@ caveman.pl [options]
     -normal-bam        -nb  Path to normal bam file
     -ignore-file       -ig  Path to ignored regions file
     -tumour-cn         -tc  Path to tumour copy number file
+                             - Use empty file with -td for blanket copynumber
     -normal-cn         -nc  Path to normal copy number file
+                             - Use empty file with -nd for blanket copynumber
     -species           -s   Species name for (output in VCF)
     -species-assembly  -sa  Species assembly for (output in VCF)
     -flag-bed-files    -b   Bed file location for flagging (eg dbSNP.bed NB must be sorted.)
