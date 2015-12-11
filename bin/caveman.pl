@@ -264,6 +264,8 @@ sub setup {
 					'pm|prior-mut-probability=f' => \$opts{'priorMut'},
 					'ps|prior-snp-probability=f' => \$opts{'priorSnp'},					
 					'a|apid=i' => \$opts{'apid'},
+					'NP|normal-platform=s' => \$opts{'tplat'},
+					'TP|tumour-platform=s' => \$opts{'nplat'},
 					'st|seqType=s' => \$opts{'seqType'},
   ) or pod2usage(2);
 
@@ -481,6 +483,8 @@ caveman.pl [options]
     -apid                  -a   Analysis process ID
     -prior-mut-probability -pm  Prior somatic probability
     -prior-snp-probability -ps  Prior germline mutant probability 
+    -normal-platform       -NP  Normal platform to override bam value
+    -tumour-platform       -TP  Tumour platform to override bam value
 
   Optional flagging parameters: [default to those found in cgpCaVEManPostProcessing]
     -flagConfig            -c   Config ini file to use for flag list and settings
@@ -590,6 +594,14 @@ Prior somatic probability
 =item B<-prior-snp-probability>
 
 Prior germline mutant probability 
+
+=item B<-normal-platform>
+
+Normal platform to override bam value
+    
+=item B<-tumour-platform> 
+
+Tumour platform to override bam value
 
 =item B<-help>
 

@@ -43,6 +43,8 @@ const my $CAVEMAN_MERGE => q{ merge -c %s -p %s -f %s};
 const my $CAVEMAN_ESTEP => q{ estep -i %d -k %f -g %s -o %s -v %s -w %s -f %s -l %s -r %s};
 const my $CAVEMAN_ESTEP_MUT_PRIOR_EXT => q{ -c %s};
 const my $CAVEMAN_ESTEP_SNP_PRIOR_EXT => q{ -d %s};
+const my $CAVEMAN_ESTEP_NPLATFORM_EXT => q{ -P %s};
+const my $CAVEMAN_ESTEP_TPLATFORM_EXT => q{ -T %s};
 const my $CAVEMAN_FLAG => q{ -i %s -o %s -s %s -m %s -n %s -b %s -g %s -umv %s -ref %s -t %s};
 const my $MERGE_CAVEMAN_RESULTS => q{ mergeCavemanResults -s %s -o %s -f %s};
 const my $CAVEMAN_VCF_IDS => q{ -i %s -o %s};
@@ -209,11 +211,20 @@ sub caveman_estep{
     }
     
     if(exists($options->{'priorMut'}) && defined($options->{'priorMut'})){
-      $command .= sprintf(,$options->{'priorMut'});
+      $command .= sprintf($CAVEMAN_ESTEP_MUT_PRIOR_EXT,$options->{'priorMut'});
     }
     
     if(exists($options->{'priorSnp'}) && defined($options->{'priorSnp'})){
-      $command .= sprintf(,$options->{'priorSnp'});
+      $command .= sprintf($CAVEMAN_ESTEP_SNP_PRIOR_EXT,$options->{'priorSnp'});
+    }
+    
+    #Check for platform overrides.
+    if(exists($options->{'nplat'}) && defined($options->{'nplat'})){
+      $command .= sprintf($CAVEMAN_ESTEP_NPLATFORM_EXT,$options->{'nplat'});
+    }
+    
+    if(exists($options->{'tplat'}) && defined($options->{'tplat'})){
+      $command .= sprintf($CAVEMAN_ESTEP_TPLATFORM_EXT,$options->{'tplat'});
     }
 
     PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $command, $index);
