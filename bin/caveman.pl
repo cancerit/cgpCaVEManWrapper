@@ -261,7 +261,11 @@ sub setup {
 					'nd|norm-cn-default=i' => \$opts{'normdefcn'},
 					'c|flagConfig=s' => \$opts{'flagConfig'},
 					'f|flagToVcfConfig=s' => \$opts{'flagToVcfConfig'},
+					'pm|prior-mut-probability=f' => \$opts{'priorMut'},
+					'ps|prior-snp-probability=f' => \$opts{'priorSnp'},					
 					'a|apid=i' => \$opts{'apid'},
+					'NP|normal-platform=s' => \$opts{'tplat'},
+					'TP|tumour-platform=s' => \$opts{'nplat'},
 					'st|seqType=s' => \$opts{'seqType'},
   ) or pod2usage(2);
 
@@ -477,6 +481,10 @@ caveman.pl [options]
     -norm-cn-default       -nd  Default normal CN to use with gaps or no file provided
     -annot-bed-files       -ab  Annotation BED files - required for pulldown/WXS
     -apid                  -a   Analysis process ID
+    -prior-mut-probability -pm  Prior somatic probability
+    -prior-snp-probability -ps  Prior germline mutant probability 
+    -normal-platform       -NP  Normal platform to override bam value
+    -tumour-platform       -TP  Tumour platform to override bam value
 
   Optional flagging parameters: [default to those found in cgpCaVEManPostProcessing]
     -flagConfig            -c   Config ini file to use for flag list and settings
@@ -578,6 +586,22 @@ Used to restrict to a single process. Valid processes are [setup|split|split_con
 =item B<-index>
 
 Use in conjunction with -process to restrict to a single job index in a process.
+
+=item B<-prior-mut-probability>
+
+Prior somatic probability
+ 
+=item B<-prior-snp-probability>
+
+Prior germline mutant probability 
+
+=item B<-normal-platform>
+
+Normal platform to override bam value
+    
+=item B<-tumour-platform> 
+
+Tumour platform to override bam value
 
 =item B<-help>
 
