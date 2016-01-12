@@ -161,13 +161,20 @@ my %index_max = ( 'setup' => 1,
 	}
 
   #Flag the results.
-	if(!exists $options->{'process'} || $options->{'process'} eq 'flag'){
+	if((!exists $options->{'process'} || $options->{'process'} eq 'flag') 
+	        && (!defined $options->{'noflag'} || $options->{'noflag'} != 1)){
 		$options->{'for_flagging'} = $options->{'ids_muts_file'};
 		$options->{'flagged'} = sprintf($FLAGGED_MUTS,$options->{'out_file'});
 		Sanger::CGP::Caveman::Implement::caveman_flag($options);
-		#finally cleanup after ourselves by removing the temporary output folder, split files etc.
-  	cleanup($options);
 	}
+	
+	if((!exists $options->{'process'}) #We aren't specifying steps
+	    || ($options->{'process'} eq 'flag') #We've flagged so we are done anyway
+	    || (defined $options->{'noflag'} && $options->{'noflag'} == 1 && $options->{'process'} eq 'add_ids')){ #No flagging wanted and preflagging step done
+	  #finally cleanup after ourselves by removing the temporary output folder, split files etc.
+    cleanup($options);
+  }
+	
 }
 
 sub cleanup{
@@ -192,11 +199,12 @@ sub cleanup{
 	move (sprintf($IDS_SNPS_TBI,$options->{'out_file'}),sprintf($IDS_SNPS_TBI,$final_loc))
  			|| die "Error trying to move raw SNPs file '".sprintf($IDS_SNPS_TBI,$options->{'out_file'})."' -> '".sprintf($IDS_SNPS_TBI,$final_loc)."': $!";
 
-	move (sprintf($FLAGGED_MUTS_GZ,$options->{'out_file'}),sprintf($FLAGGED_MUTS_GZ,$final_loc))
- 			|| die "Error trying to move flagged muts file '".sprintf($FLAGGED_MUTS_GZ,$options->{'out_file'})."' -> '".sprintf($FLAGGED_MUTS_GZ,$final_loc)."': $!";
-	move (sprintf($FLAGGED_MUTS_TBI,$options->{'out_file'}),sprintf($FLAGGED_MUTS_TBI,$final_loc))
- 			|| die "Error trying to move flagged muts file '".sprintf($FLAGGED_MUTS_TBI,$options->{'out_file'})."' -> '".sprintf($FLAGGED_MUTS_TBI,$final_loc)."': $!";
-
+  if(defined($options->{'noflag'}) && $options->{'noflag'} != 1 ){
+    move (sprintf($FLAGGED_MUTS_GZ,$options->{'out_file'}),sprintf($FLAGGED_MUTS_GZ,$final_loc))
+        || die "Error trying to move flagged muts file '".sprintf($FLAGGED_MUTS_GZ,$options->{'out_file'})."' -> '".sprintf($FLAGGED_MUTS_GZ,$final_loc)."': $!";
+    move (sprintf($FLAGGED_MUTS_TBI,$options->{'out_file'}),sprintf($FLAGGED_MUTS_TBI,$final_loc))
+        || die "Error trying to move flagged muts file '".sprintf($FLAGGED_MUTS_TBI,$options->{'out_file'})."' -> '".sprintf($FLAGGED_MUTS_TBI,$final_loc)."': $!";
+  }
   move ($options->{'logs'},File::Spec->catdir($options->{'outdir'},'logs'))
       || die "Error trying to move logs directory '$options->{logs}' -> '".File::Spec->catdir($options->{'outdir'},'logs')."': $!";
 
@@ -267,6 +275,7 @@ sub setup {
 					'NP|normal-platform=s' => \$opts{'tplat'},
 					'TP|tumour-platform=s' => \$opts{'nplat'},
 					'st|seqType=s' => \$opts{'seqType'},
+					'noflag|no-flagging' => \$opts{'noflag'},
   ) or pod2usage(2);
 
   pod2usage(-verbose => 1) if(defined $opts{'h'});
@@ -485,6 +494,7 @@ caveman.pl [options]
     -prior-snp-probability -ps  Prior germline mutant probability 
     -normal-platform       -NP  Normal platform to override bam value
     -tumour-platform       -TP  Tumour platform to override bam value
+    -no-flagging           -noflag Do not flag, instead cleanup at the end of the merged results after estep.
 
   Optional flagging parameters: [default to those found in cgpCaVEManPostProcessing]
     -flagConfig            -c   Config ini file to use for flag list and settings
@@ -602,6 +612,10 @@ Normal platform to override bam value
 =item B<-tumour-platform> 
 
 Tumour platform to override bam value
+
+=item B<-no-flagging>
+
+Don't flag the data, just cleanup after merging results
 
 =item B<-help>
 
