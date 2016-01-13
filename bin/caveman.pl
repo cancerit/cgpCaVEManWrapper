@@ -59,6 +59,8 @@ const my $RAW_SNPS => q{%s.snps.vcf};
 const my $IDS_SNPS => q{%s.snps.ids.vcf};
 const my $IDS_SNPS_GZ => q{%s.snps.ids.vcf.gz};
 const my $IDS_SNPS_TBI => q{%s.snps.ids.vcf.gz.tbi};
+const my $IDS_MUTS_GZ => q{%s.muts.ids.vcf.gz};
+const my $IDS_MUTS_TBI => q{%s.muts.ids.vcf.gz.tbi};
 const my $NO_ANALYSIS => q{%s.no_analysis.bed};
 const my $SP_ASS_MESSAGE => qq{%s defined at commandline (%s) does not match that in the BAM file (%s). Defaulting to BAM file value.\n};
 
@@ -172,6 +174,8 @@ my %index_max = ( 'setup' => 1,
 	    || ($options->{'process'} eq 'flag') #We've flagged so we are done anyway
 	    || (defined $options->{'noflag'} && $options->{'noflag'} == 1 && $options->{'process'} eq 'add_ids')){ #No flagging wanted and preflagging step done
 	  #finally cleanup after ourselves by removing the temporary output folder, split files etc.
+	  #TODO Zip the snps files with IDs
+	  Sanger::CGP::Caveman::Implement::pre_cleanup_zip($options);
     cleanup($options);
   }
 	
@@ -193,6 +197,11 @@ sub cleanup{
       || die "Error trying to move splitList '$options->{splitList}' -> '".File::Spec->catfile($options->{'outdir'},'splitList')."': $!";
  	move (sprintf($NO_ANALYSIS,$options->{'out_file'}),sprintf($NO_ANALYSIS,$final_loc))
  			|| die "Error trying to move no analysis file '".sprintf($NO_ANALYSIS,$options->{'out_file'})."' -> '".sprintf($NO_ANALYSIS,$final_loc)."': $!";
+
+  move (sprintf($IDS_MUTS_GZ,$options->{'out_file'}),sprintf($IDS_MUTS_GZ,$final_loc))
+ 			|| die "Error trying to move raw SNPs file '".sprintf($IDS_MUTS_GZ,$options->{'out_file'})."' -> '".sprintf($IDS_MUTS_GZ,$final_loc)."': $!";
+	move (sprintf($IDS_MUTS_TBI,$options->{'out_file'}),sprintf($IDS_MUTS_TBI,$final_loc))
+ 			|| die "Error trying to move raw SNPs file '".sprintf($IDS_MUTS_TBI,$options->{'out_file'})."' -> '".sprintf($IDS_MUTS_TBI,$final_loc)."': $!";
 
 	move (sprintf($IDS_SNPS_GZ,$options->{'out_file'}),sprintf($IDS_SNPS_GZ,$final_loc))
  			|| die "Error trying to move raw SNPs file '".sprintf($IDS_SNPS_GZ,$options->{'out_file'})."' -> '".sprintf($IDS_SNPS_GZ,$final_loc)."': $!";
