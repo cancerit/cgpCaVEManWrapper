@@ -307,8 +307,7 @@ sub caveman_flag{
 	$flag .= ' -p '.$options->{'apid'} if(defined $options->{'apid'});
 	if($options->{'seqType'} eq 'pulldown') {
 	  die "ERROR: Pulldown flagging requires annotation BED files" unless(defined $options->{'annot-bed'});
-	  $flag .= ' -ab '.$options->{'annot-bed'};
-	}
+	  $flag .= ' -ab '.$options->{'annot-bed'};	}
 
   my $vcf_gz = $flagged.'.gz';
   my $bgzip = _which('bgzip');
@@ -316,6 +315,27 @@ sub caveman_flag{
 
   my $tabix = _which('tabix');
   $tabix .= sprintf ' -p vcf %s', $vcf_gz;
+  
+
+  my @commands = ($flag, $bgzip, $tabix);
+
+	PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), \@commands, 0);
+	return PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), 0);
+}
+
+sub pre_cleanup_zip {
+  # uncoverable subroutine
+	my $options = shift;
+	my $tmp = $options->{'tmp'};
+	
+	return 1 if PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'), 0);
+	
+	my $vcf_muts_gz = $options->{'ids_muts_file'}.'.gz';
+	my $bgzip_muts = _which('bgzip');
+  $bgzip_muts .= sprintf ' -c %s > %s', $options->{'ids_muts_file'}, $vcf_muts_gz;
+  
+  my $tabix_muts = _which('tabix');
+  $tabix_muts .= sprintf ' -p vcf %s', $vcf_muts_gz;
 
   my $vcf_snps_gz = $options->{'ids_snps_file'}.'.gz';
   my $bgzip_snps = _which('bgzip');
@@ -323,10 +343,9 @@ sub caveman_flag{
 
   my $tabix_snps = _which('tabix');
   $tabix_snps .= sprintf ' -p vcf %s', $vcf_snps_gz;
-
-  my @commands = ($flag, $bgzip, $tabix, $bgzip_snps, $tabix_snps);
-
-	PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), \@commands, 0);
+  my @commands = ($bgzip_muts, $tabix_muts, $bgzip_snps, $tabix_snps);
+  
+  PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), \@commands, 0);
 	return PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), 0);
 }
 
