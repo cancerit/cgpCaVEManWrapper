@@ -163,13 +163,13 @@ my %index_max = ( 'setup' => 1,
 	}
 
   #Flag the results.
-	if((!exists $options->{'process'} || $options->{'process'} eq 'flag') 
+	if((!exists $options->{'process'} || $options->{'process'} eq 'flag')
 	        && (!defined $options->{'noflag'} || $options->{'noflag'} != 1)){
 		$options->{'for_flagging'} = $options->{'ids_muts_file'};
 		$options->{'flagged'} = sprintf($FLAGGED_MUTS,$options->{'out_file'});
 		Sanger::CGP::Caveman::Implement::caveman_flag($options);
 	}
-	
+
 	if((!exists $options->{'process'}) #We aren't specifying steps
 	    || ($options->{'process'} eq 'flag') #We've flagged so we are done anyway
 	    || (defined $options->{'noflag'} && $options->{'noflag'} == 1 && $options->{'process'} eq 'add_ids')){ #No flagging wanted and preflagging step done
@@ -178,7 +178,7 @@ my %index_max = ( 'setup' => 1,
 	  Sanger::CGP::Caveman::Implement::pre_cleanup_zip($options);
     cleanup($options);
   }
-	
+
 }
 
 sub cleanup{
@@ -279,7 +279,7 @@ sub setup {
 					'c|flagConfig=s' => \$opts{'flagConfig'},
 					'f|flagToVcfConfig=s' => \$opts{'flagToVcfConfig'},
 					'pm|prior-mut-probability=f' => \$opts{'priorMut'},
-					'ps|prior-snp-probability=f' => \$opts{'priorSnp'},					
+					'ps|prior-snp-probability=f' => \$opts{'priorSnp'},
 					'a|apid=i' => \$opts{'apid'},
 					'NP|normal-platform=s' => \$opts{'tplat'},
 					'TP|tumour-platform=s' => \$opts{'nplat'},
@@ -339,6 +339,11 @@ sub setup {
 
   PCAP::Cli::file_for_reading('germline-indel-bed',$opts{'germindel'}) if(!exists $opts{'process'} || (exists $opts{'process'} && $opts{'process'} eq 'flag'));
   PCAP::Cli::out_dir_check('outdir', $opts{'outdir'});
+  my $final_logs = File::Spec->catdir($opts{'outdir'}, 'logs');
+  if(-e $final_logs) {
+    warn "NOTE: Presence of '$final_logs' directory suggests successful complete analysis, please delete to rerun\n";
+    exit 0;
+  }
 
   PCAP::Cli::file_for_reading('flagConfig',$opts{'flagConfig'}) if(defined $opts{'flagConfig'});
   PCAP::Cli::file_for_reading('flagToVcfConfig',$opts{'flagToVcfConfig'}) if(defined $opts{'flagToVcfConfig'});
@@ -500,7 +505,7 @@ caveman.pl [options]
     -annot-bed-files       -ab  Annotation BED files - required for pulldown/WXS
     -apid                  -a   Analysis process ID
     -prior-mut-probability -pm  Prior somatic probability
-    -prior-snp-probability -ps  Prior germline mutant probability 
+    -prior-snp-probability -ps  Prior germline mutant probability
     -normal-platform       -NP  Normal platform to override bam value
     -tumour-platform       -TP  Tumour platform to override bam value
     -no-flagging           -noflag Do not flag, instead cleanup at the end of the merged results after estep.
@@ -609,16 +614,16 @@ Use in conjunction with -process to restrict to a single job index in a process.
 =item B<-prior-mut-probability>
 
 Prior somatic probability
- 
+
 =item B<-prior-snp-probability>
 
-Prior germline mutant probability 
+Prior germline mutant probability
 
 =item B<-normal-platform>
 
 Normal platform to override bam value
-    
-=item B<-tumour-platform> 
+
+=item B<-tumour-platform>
 
 Tumour platform to override bam value
 
