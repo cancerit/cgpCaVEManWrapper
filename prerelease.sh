@@ -2,21 +2,21 @@
 
 ##########LICENCE##########
 #  Copyright (c) 2014 Genome Research Ltd.
-#  
+#
 #  Author: David Jones <cgpit@sanger.ac.uk>
-# 
+#
 #  This file is part of cgpCaVEManWrapper.
-# 
+#
 #  cgpCaVEManWrapper is free software: you can redistribute it and/or modify it under
 #  the terms of the GNU Affero General Public License as published by the Free
 #  Software Foundation; either version 3 of the License, or (at your option) any
 #  later version.
-# 
+#
 #  This program is distributed in the hope that it will be useful, but WITHOUT
 #  ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 #  FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
 #  details.
-# 
+#
 #  You should have received a copy of the GNU Affero General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 ##########LICENCE##########
@@ -47,11 +47,11 @@ echo '### Running perl tests ###'
 export HARNESS_PERL_SWITCHES=-MDevel::Cover=-db,reports,-ignore,'t/.*\.t'
 rm -rf docs
 mkdir -p docs/reports_text
-prove --nocolor -I ./lib | sed 's/^/  /' # indent output of prove
+prove --nocolor -I ./lib
 
 echo '### Generating test/pod coverage reports ###'
 # removed 'condition' from coverage as '||' 'or' doesn't work properly
-cover -coverage branch,subroutine,pod -report_c0 50 -report_c1 85 -report_c2 100 -report html_basic reports -silent > /dev/null
+cover -coverage branch,subroutine,pod -report_c0 50 -report_c1 85 -report_c2 100 -report html_basic reports -silent
 cover -coverage branch,subroutine,pod -report text reports -silent > docs/reports_text/coverage.txt
 rm -rf reports/structure reports/digests reports/cover.13 reports/runs
 cp reports/coverage.html reports/index.html
