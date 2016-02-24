@@ -164,7 +164,7 @@ my %index_max = ( 'setup' => 1,
 
   #Flag the results.
 	if((!exists $options->{'process'} || $options->{'process'} eq 'flag')
-	        && (!defined $options->{'noflag'} || $options->{'noflag'} != 1)){
+	        && $options->{'noflag'} == 0){
 		$options->{'for_flagging'} = $options->{'ids_muts_file'};
 		$options->{'flagged'} = sprintf($FLAGGED_MUTS,$options->{'out_file'});
 		Sanger::CGP::Caveman::Implement::caveman_flag($options);
@@ -172,7 +172,7 @@ my %index_max = ( 'setup' => 1,
 
 	if((!exists $options->{'process'}) #We aren't specifying steps
 	    || ($options->{'process'} eq 'flag') #We've flagged so we are done anyway
-	    || (defined $options->{'noflag'} && $options->{'noflag'} == 1 && $options->{'process'} eq 'add_ids')){ #No flagging wanted and preflagging step done
+	    || ($options->{'noflag'} == 1 && $options->{'process'} eq 'add_ids')){ #No flagging wanted and preflagging step done
 	  #finally cleanup after ourselves by removing the temporary output folder, split files etc.
 	  #TODO Zip the snps files with IDs
 	  Sanger::CGP::Caveman::Implement::pre_cleanup_zip($options);
@@ -208,7 +208,7 @@ sub cleanup{
 	move (sprintf($IDS_SNPS_TBI,$options->{'out_file'}),sprintf($IDS_SNPS_TBI,$final_loc))
  			|| die "Error trying to move raw SNPs file '".sprintf($IDS_SNPS_TBI,$options->{'out_file'})."' -> '".sprintf($IDS_SNPS_TBI,$final_loc)."': $!";
 
-  if(defined($options->{'noflag'}) && $options->{'noflag'} != 1 ){
+  if($options->{'noflag'} == 0){
     move (sprintf($FLAGGED_MUTS_GZ,$options->{'out_file'}),sprintf($FLAGGED_MUTS_GZ,$final_loc))
         || die "Error trying to move flagged muts file '".sprintf($FLAGGED_MUTS_GZ,$options->{'out_file'})."' -> '".sprintf($FLAGGED_MUTS_GZ,$final_loc)."': $!";
     move (sprintf($FLAGGED_MUTS_TBI,$options->{'out_file'}),sprintf($FLAGGED_MUTS_TBI,$final_loc))
@@ -298,6 +298,8 @@ sub setup {
   my $defined;
   for(keys %opts) { $defined++ if(defined $opts{$_}); }
   pod2usage(-msg  => "\nERROR: Options must be defined.\n", -verbose => 2,  -output => \*STDERR) unless($defined);
+
+  $opts{'noflag'} = 0 unless(defined $opts{'noflag'});
 
   #Check all files and dirs are readable and exist.
   PCAP::Cli::file_for_reading('reference',$opts{'reference'});
