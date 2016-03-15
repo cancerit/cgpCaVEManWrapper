@@ -21,7 +21,7 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 ##########LICENCE##########
 
-CAVEMAN_CORE="https://github.com/cancerit/CaVEMan/archive/1.9.1.tar.gz"
+CAVEMAN_CORE="https://github.com/cancerit/CaVEMan/archive/1.9.2.tar.gz"
 
 done_message () {
     if [ $? -eq 0 ]; then
