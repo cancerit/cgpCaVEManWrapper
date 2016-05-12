@@ -40,6 +40,7 @@ use List::Util qw(first);
 use Const::Fast qw(const);
 use File::Copy;
 use Capture::Tiny qw(capture_stdout);
+use Bio::DB::HTS;
 
 use PCAP::Cli;
 use Sanger::CGP::Caveman::Implement;
@@ -223,7 +224,7 @@ sub cleanup{
 
 sub getSpeciesAssemblyFromBam{
   my ($opts) = @_;
-  my $bam = Bio::DB::Sam->new(-bam  =>$opts->{'tumbam'});
+  my $bam = Bio::DB::HTS->new(-bam  =>$opts->{'tumbam'});
   my $head = $bam->header->text;
   my @split_head = split(/\n/,$head);
   foreach my $line(@split_head){
