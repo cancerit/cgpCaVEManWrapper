@@ -286,6 +286,8 @@ sub setup {
 					'TP|tumour-platform=s' => \$opts{'nplat'},
 					'st|seqType=s' => \$opts{'seqType'},
 					'noflag|no-flagging' => \$opts{'noflag'},
+					'mpc|mut_probability_cutoff=f' => \$opts{'mpc'},
+					'spc|snp_probability_cutoff=f' => \$opts{'spc'},
   ) or pod2usage(2);
 
   pod2usage(-verbose => 1) if(defined $opts{'h'});
@@ -497,21 +499,23 @@ caveman.pl [options]
     -seqType           -st  Sequencing type (genomic|pulldown)
 
    Optional parameters:
-    -normal-contamination  -k   Normal contamination value (default 0.1)
-    -threads               -t   Number of threads allowed on this machine (default 1)
-    -limit                 -l   Limit the number of jobs required for m/estep (default undef)
-    -logs                  -g   Location to write logs (default is ./logs)
-    -normal-protocol       -np  Normal protocol [WGS|WXS|RNA] (default WGS)
-    -tumour-protocol       -tp  Tumour protocol [WGS|WXS|RNA] (default WGS)
-    -tum-cn-default        -td  Default tumour CN to use with gaps or no file provided
-    -norm-cn-default       -nd  Default normal CN to use with gaps or no file provided
-    -annot-bed-files       -ab  Annotation BED files - required for pulldown/WXS
-    -apid                  -a   Analysis process ID
-    -prior-mut-probability -pm  Prior somatic probability
-    -prior-snp-probability -ps  Prior germline mutant probability
-    -normal-platform       -NP  Normal platform to override bam value
-    -tumour-platform       -TP  Tumour platform to override bam value
-    -no-flagging           -noflag Do not flag, instead cleanup at the end of the merged results after estep.
+    -normal-contamination   -k      Normal contamination value (default 0.1)
+    -threads                -t      Number of threads allowed on this machine (default 1)
+    -limit                  -l      Limit the number of jobs required for m/estep (default undef)
+    -logs                   -g      Location to write logs (default is ./logs)
+    -normal-protocol        -np     Normal protocol [WGS|WXS|RNA] (default WGS)
+    -tumour-protocol        -tp     Tumour protocol [WGS|WXS|RNA] (default WGS)
+    -tum-cn-default         -td     Default tumour CN to use with gaps or no file provided
+    -norm-cn-default        -nd     Default normal CN to use with gaps or no file provided
+    -annot-bed-files        -ab     Annotation BED files - required for pulldown/WXS
+    -apid                   -a      Analysis process ID
+    -prior-mut-probability  -pm     Prior somatic probability
+    -prior-snp-probability  -ps     Prior germline mutant probability
+    -normal-platform        -NP     Normal platform to override bam value
+    -tumour-platform        -TP     Tumour platform to override bam value
+    -no-flagging            -noflag Do not flag, instead cleanup at the end of the merged results after estep.
+    -mut_probability_cutoff -mpc    Minimum total somatic genotype probability for output
+    -snp_probability_cutoff -spc    Minimum total germline genotype probability for output
 
   Optional flagging parameters: [default to those found in cgpCaVEManPostProcessing]
     -flagConfig            -c   Config ini file to use for flag list and settings

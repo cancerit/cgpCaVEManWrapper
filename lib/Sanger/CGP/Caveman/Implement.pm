@@ -48,6 +48,8 @@ const my $CAVEMAN_ESTEP_TPLATFORM_EXT => q{ -T %s};
 const my $CAVEMAN_FLAG => q{ -i %s -o %s -s %s -m %s -n %s -b %s -g %s -umv %s -ref %s -t %s};
 const my $MERGE_CAVEMAN_RESULTS => q{ mergeCavemanResults -s %s -o %s -f %s};
 const my $CAVEMAN_VCF_IDS => q{ -i %s -o %s};
+const my $CAVEMAN_MUT_PROB_CUTOFF => q{ -p %f};
+const my $CAVEMAN_SNP_PROB_CUTOFF => q{ -q %f};
 
 const my $FLAG_SCRIPT => q{cgpFlagCaVEMan.pl};
 const my $IDS_SCRIPT => q{cgpAppendIdsToVcf.pl};
@@ -201,7 +203,7 @@ sub caveman_estep{
                     $config,
                     $normprot,
                     $tumprot);
-                    
+
     if(exists($options->{'normdefcn'}) && defined($options->{'normdefcn'})){ #Add default normal cn
       $command .= ' -n '.$options->{'normdefcn'};
     }
@@ -209,22 +211,30 @@ sub caveman_estep{
     if(exists($options->{'tumdefcn'}) && defined($options->{'tumdefcn'})){ #Add default tumour cn
       $command .= ' -t '.$options->{'tumdefcn'};
     }
-    
+
     if(exists($options->{'priorMut'}) && defined($options->{'priorMut'})){
       $command .= sprintf($CAVEMAN_ESTEP_MUT_PRIOR_EXT,$options->{'priorMut'});
     }
-    
+
     if(exists($options->{'priorSnp'}) && defined($options->{'priorSnp'})){
       $command .= sprintf($CAVEMAN_ESTEP_SNP_PRIOR_EXT,$options->{'priorSnp'});
     }
-    
+
     #Check for platform overrides.
     if(exists($options->{'nplat'}) && defined($options->{'nplat'})){
       $command .= sprintf($CAVEMAN_ESTEP_NPLATFORM_EXT,$options->{'nplat'});
     }
-    
+
     if(exists($options->{'tplat'}) && defined($options->{'tplat'})){
       $command .= sprintf($CAVEMAN_ESTEP_TPLATFORM_EXT,$options->{'tplat'});
+    }
+
+    if(exists($options->{'mpc'}) && defined($options->{'mpc'})){
+      $command .= sprintf($CAVEMAN_MUT_PROB_CUTOFF,$options->{'mpc'});
+    }
+
+    if(exists($options->{'spc'}) && defined($options->{'spc'})){
+      $command .= sprintf($CAVEMAN_SNP_PROB_CUTOFF,$options->{'spc'});
     }
 
     PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $command, $index);
@@ -315,7 +325,7 @@ sub caveman_flag{
 
   my $tabix = _which('tabix');
   $tabix .= sprintf ' -p vcf %s', $vcf_gz;
-  
+
 
   my @commands = ($flag, $bgzip, $tabix);
 
@@ -327,13 +337,13 @@ sub pre_cleanup_zip {
   # uncoverable subroutine
 	my $options = shift;
 	my $tmp = $options->{'tmp'};
-	
+
 	return 1 if PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'), 0);
-	
+
 	my $vcf_muts_gz = $options->{'ids_muts_file'}.'.gz';
 	my $bgzip_muts = _which('bgzip');
   $bgzip_muts .= sprintf ' -c %s > %s', $options->{'ids_muts_file'}, $vcf_muts_gz;
-  
+
   my $tabix_muts = _which('tabix');
   $tabix_muts .= sprintf ' -p vcf %s', $vcf_muts_gz;
 
@@ -344,7 +354,7 @@ sub pre_cleanup_zip {
   my $tabix_snps = _which('tabix');
   $tabix_snps .= sprintf ' -p vcf %s', $vcf_snps_gz;
   my @commands = ($bgzip_muts, $tabix_muts, $bgzip_snps, $tabix_snps);
-  
+
   PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), \@commands, 0);
 	return PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), 0);
 }
