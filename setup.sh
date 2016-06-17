@@ -21,7 +21,7 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 ##########LICENCE##########
 
-CAVEMAN_CORE="https://github.com/cancerit/CaVEMan/archive/1.9.2.tar.gz"
+CAVEMAN_CORE="https://github.com/cancerit/CaVEMan/archive/1.9.3.tar.gz"
 
 done_message () {
     if [ $? -eq 0 ]; then
@@ -67,6 +67,7 @@ cd $INIT_DIR
 
 # make sure that build is self contained
 unset PERL5LIB
+ARCHNAME=`perl -e 'use Config; print $Config{archname};'`
 PERLROOT=$INST_PATH/lib/perl5
 export PERL5LIB="$PERLROOT"
 
@@ -114,11 +115,10 @@ else
   if [ ! -e caveman ]; then
     get_distro "caveman" $CAVEMAN_CORE
   fi
-  set +e
-  cd caveman &&
-  ./setup.sh $INST_PATH &&
-  cp scripts/mergeCavemanResults $INST_PATH/bin/. &&
-  chmod a+x $INST_PATH/bin/mergeCavemanResults &&
+  cd caveman
+  ./setup.sh $INST_PATH
+  cp scripts/mergeCavemanResults $INST_PATH/bin/.
+  chmod a+x $INST_PATH/bin/mergeCavemanResults
   touch $SETUP_DIR/caveman.success
   )>>$INIT_DIR/setup.log 2>&1
 fi
@@ -128,7 +128,7 @@ done_message "" "Failed to build CaVEMan."
 export PATH="$INST_PATH/bin:$PATH"
 
 cd $INIT_DIR
-set -e
+
 echo -n "Installing Perl prerequisites ..."
 if ! ( perl -MExtUtils::MakeMaker -e 1 >/dev/null 2>&1); then
     echo
@@ -141,13 +141,12 @@ fi
 ) >>$INIT_DIR/setup.log 2>&1
 done_message "" "Failed during installation of core dependencies."
 
-set +e
 echo -n "Installing cgpCaVEManWrapper ..."
 (
-  cd $INIT_DIR &&
-  perl Makefile.PL INSTALL_BASE=$INST_PATH &&
-  make &&
-  make test &&
+  cd $INIT_DIR
+  perl Makefile.PL INSTALL_BASE=$INST_PATH
+  make
+  make test
   make install
 ) >>$INIT_DIR/setup.log 2>&1
 done_message "" "cgpCaVEManWrapper install failed."
