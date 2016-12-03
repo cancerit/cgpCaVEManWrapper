@@ -46,6 +46,15 @@ get_distro () {
   tar --strip-components 1 -C $1 -zxf $1.tar.gz
 }
 
+if [ ! -z ${CAVE_C_REMOTE_TAR+x} ] ; then
+  CAVEMAN_CORE=$CAVE_C_REMOTE_TAR
+fi
+
+
+echo $CAVEMAN_CORE
+exit
+
+
 if [ "$#" -ne "1" ] ; then
   echo "Please provide an installation path  such as /opt/ICGC"
   exit 0
