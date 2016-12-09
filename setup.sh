@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ##########LICENCE##########
-#  Copyright (c) 2014,2015 Genome Research Ltd.
+#  Copyright (c) 2014,2015,2016 Genome Research Ltd.
 #
 #  Author: David Jones <cgpit@sanger.ac.uk>
 #
@@ -21,7 +21,7 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 ##########LICENCE##########
 
-CAVEMAN_CORE="https://github.com/cancerit/CaVEMan/archive/1.10.1.tar.gz"
+CAVEMAN_CORE="https://github.com/cancerit/CaVEMan/archive/1.11.0.tar.gz"
 
 done_message () {
     if [ $? -eq 0 ]; then

@@ -66,6 +66,7 @@ const my $NO_ANALYSIS => q{%s.no_analysis.bed};
 const my $SP_ASS_MESSAGE => qq{%s defined at commandline (%s) does not match that in the BAM file (%s). Defaulting to BAM file value.\n};
 
 const my @VALID_PROTOCOLS => qw(WGS WXS RNA);
+const my @PERMITTED_SEQ_TYPES => qw(pulldown|exome|genome|genomic|followup|targeted|rna_seq);
 const my $DEFAULT_PROTOCOL => 'WGS';
 
 my %index_max = ( 'setup' => 1,
@@ -165,7 +166,7 @@ my %index_max = ( 'setup' => 1,
 
   #Flag the results.
 	if((!exists $options->{'process'} || $options->{'process'} eq 'flag')
-	        && $options->{'noflag'} == 0){
+        && (!defined $options->{'noflag'} || $options->{'noflag'} != 1)){
 		$options->{'for_flagging'} = $options->{'ids_muts_file'};
 		$options->{'flagged'} = sprintf($FLAGGED_MUTS,$options->{'out_file'});
 		Sanger::CGP::Caveman::Implement::caveman_flag($options);
@@ -359,7 +360,7 @@ sub setup {
 
 	pod2usage(-msg  => "\nERROR: 'species' must be defined, see BAM header options.\n", -verbose => 2,  -output => \*STDERR) unless(defined $opts{'species'});
 	pod2usage(-msg  => "\nERROR: 'species-assembly' must be defined, see BAM header options.\n", -verbose => 2,  -output => \*STDERR) unless(defined $opts{'species-assembly'});
-	pod2usage(-msg  => "\nERROR: 'seqType' must be defined.\n", -verbose => 2,  -output => \*STDERR) unless(defined $opts{'seqType'});
+	pod2usage(-msg  => "\nERROR: 'seqType' must be defined and one of the permitted list: ".join("|",@PERMITTED_SEQ_TYPES).".\n", -verbose => 2,  -output => \*STDERR) unless(defined $opts{'seqType'} && grep {$opts{'seqType'}} @PERMITTED_SEQ_TYPES);
 
   #check the reference is the fasta fai file.
   pod2usage(-msg  => "\nERROR: reference option (-r) does not appear to be a fasta index file.\n", -verbose => 2,  -output => \*STDERR) unless($opts{'reference'} =~ m/\.fai$/);
@@ -496,7 +497,7 @@ caveman.pl [options]
     -flag-bed-files    -b   Bed file location for flagging (eg dbSNP.bed NB must be sorted.)
     -germline-indel    -in  Location of germline indel bedfile
     -unmatched-vcf     -u   Directory containing unmatched normal VCF files or http/ftp base URL
-    -seqType           -st  Sequencing type (genomic|pulldown)
+    -seqType           -st  Sequencing type (pulldown|exome|genome|genomic|followup|targeted|rna_seq) - Passed to flagging
 
    Optional parameters:
     -normal-contamination   -k      Normal contamination value (default 0.1)
