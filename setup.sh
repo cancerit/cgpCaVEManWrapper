@@ -23,19 +23,6 @@
 
 CAVEMAN_CORE="https://github.com/cancerit/CaVEMan/archive/1.11.0.tar.gz"
 
-done_message () {
-    if [ $? -eq 0 ]; then
-        echo " done."
-        if [ "x$1" != "x" ]; then
-            echo $1
-        fi
-    else
-        echo " failed.  See setup.log file for error messages." $2
-        echo "    Please check INSTALL file for items that should be installed by a package manager"
-        exit 1
-    fi
-}
-
 get_distro () {
   if hash curl 2>/dev/null; then
     curl -sS -o $1.tar.gz -L $2
@@ -49,11 +36,6 @@ get_distro () {
 if [ ! -z ${CAVE_C_REMOTE_TAR+x} ] ; then
   CAVEMAN_CORE=$CAVE_C_REMOTE_TAR
 fi
-
-
-echo $CAVEMAN_CORE
-exit
-
 
 if [ "$#" -ne "1" ] ; then
   echo "Please provide an installation path  such as /opt/ICGC"
@@ -84,22 +66,17 @@ export PERL5LIB="$PERLROOT"
 SETUP_DIR=$INIT_DIR/install_tmp
 mkdir -p $SETUP_DIR
 
-# re-initialise log file
-echo > $INIT_DIR/setup.log
-
 
 # log information about this system
-(
-    echo '============== System information ===='
-    set -x
-    lsb_release -a
-    uname -a
-    sw_vers
-    system_profiler
-    grep MemTotal /proc/meminfo
-    set +x
-    echo
-) >>$INIT_DIR/setup.log 2>&1
+echo '============== System information ===='
+set -x
+lsb_release -a
+uname -a
+sw_vers
+system_profiler
+grep MemTotal /proc/meminfo
+set +x
+echo
 
 CHK=`perl -le 'eval "require $ARGV[0]" and print $ARGV[0]->VERSION' PCAP`
 if [[ "x$CHK" == "x" ]] ; then
@@ -119,7 +96,6 @@ if [ -e $SETUP_DIR/caveman.success ]; then
   echo -n " previously installed ...";
 else
   cd $SETUP_DIR
-  (
   set -xe
   if [ ! -e caveman ]; then
     get_distro "caveman" $CAVEMAN_CORE
@@ -129,9 +105,7 @@ else
   cp scripts/mergeCavemanResults $INST_PATH/bin/.
   chmod a+x $INST_PATH/bin/mergeCavemanResults
   touch $SETUP_DIR/caveman.success
-  )>>$INIT_DIR/setup.log 2>&1
 fi
-done_message "" "Failed to build CaVEMan."
 
 #add bin path for PCAP install tests
 export PATH="$INST_PATH/bin:$PATH"
@@ -140,30 +114,22 @@ cd $INIT_DIR
 
 echo -n "Installing Perl prerequisites ..."
 if ! ( perl -MExtUtils::MakeMaker -e 1 >/dev/null 2>&1); then
-    echo
-    echo "WARNING: Your Perl installation does not seem to include a complete set of core modules.  Attempting to cope with this, but if installation fails please make sure that at least ExtUtils::MakeMaker is installed.  For most users, the best way to do this is to use your system's package manager: apt, yum, fink, homebrew, or similar."
+  echo
+  echo "WARNING: Your Perl installation does not seem to include a complete set of core modules.  Attempting to cope with this, but if installation fails please make sure that at least ExtUtils::MakeMaker is installed.  For most users, the best way to do this is to use your system's package manager: apt, yum, fink, homebrew, or similar."
 fi
-(
-  set -x
-  perl $INIT_DIR/bin/cpanm -v --mirror http://cpan.metacpan.org --notest -l $INST_PATH/ --installdeps . < /dev/null
-  set +x
-) >>$INIT_DIR/setup.log 2>&1
-done_message "" "Failed during installation of core dependencies."
+set -x
+perl $INIT_DIR/bin/cpanm -v --mirror http://cpan.metacpan.org --notest -l $INST_PATH/ --installdeps . < /dev/null
+set +x
 
 echo -n "Installing cgpCaVEManWrapper ..."
-(
-  cd $INIT_DIR
-  perl Makefile.PL INSTALL_BASE=$INST_PATH
-  make
-  make test
-  make install
-) >>$INIT_DIR/setup.log 2>&1
-done_message "" "cgpCaVEManWrapper install failed."
+cd $INIT_DIR
+perl Makefile.PL INSTALL_BASE=$INST_PATH
+make
+make test
+make install
 
 # cleanup all junk
 rm -rf $SETUP_DIR
-
-
 
 echo
 echo
