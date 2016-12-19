@@ -343,7 +343,7 @@ sub setup {
   delete $opts{'index'} unless(defined $opts{'index'});
   delete $opts{'limit'} unless(defined $opts{'limit'});
 
-  PCAP::Cli::file_for_reading('germline-indel-bed',$opts{'germindel'}) if(!exists $opts{'process'} || (exists $opts{'process'} && $opts{'process'} eq 'flag'));
+  PCAP::Cli::file_for_reading('germline-indel-bed',$opts{'germindel'}) if(defined $opts{'germindel'});
   PCAP::Cli::out_dir_check('outdir', $opts{'outdir'});
   my $final_logs = File::Spec->catdir($opts{'outdir'}, 'logs');
   if(-e $final_logs) {
@@ -654,4 +654,3 @@ Prints the manual page and exits.
 B<caveman.pl> will attempt to run all caveman steps automatically including collation of output files.
 
 =cut
-
