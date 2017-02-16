@@ -50,6 +50,7 @@ const my $MERGE_CAVEMAN_RESULTS => q{ mergeCavemanResults -s %s -o %s -f %s};
 const my $CAVEMAN_VCF_IDS => q{ -i %s -o %s};
 const my $CAVEMAN_MUT_PROB_CUTOFF => q{ -p %f};
 const my $CAVEMAN_SNP_PROB_CUTOFF => q{ -q %f};
+const my $CAVEMAN_DEBUG_MODE => q{ -s};
 
 const my $FLAG_SCRIPT => q{cgpFlagCaVEMan.pl};
 const my $IDS_SCRIPT => q{cgpAppendIdsToVcf.pl};
@@ -235,6 +236,10 @@ sub caveman_estep{
 
     if(exists($options->{'spc'}) && defined($options->{'spc'})){
       $command .= sprintf($CAVEMAN_SNP_PROB_CUTOFF,$options->{'spc'});
+    }
+
+    if(exists($options->{'debug_cave'}) && defined($options->{'debug_cave'})){
+      $command .= sprintf($CAVEMAN_DEBUG_MODE);
     }
 
     PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $command, $index);
