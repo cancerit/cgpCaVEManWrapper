@@ -641,6 +641,11 @@ Tumour platform to override bam value
 
 Don't flag the data, just cleanup after merging results
 
+=item B<-debug>
+
+Run the CaVEMan estep in debug mode. This causes CaVEMan to output a
+.dbg.vcf file containing an entry for every analysed position in the genome
+
 =item B<-help>
 
 Print a brief help message and exits.
