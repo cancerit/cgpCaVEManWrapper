@@ -315,8 +315,8 @@ sub caveman_flag{
 	$flag .= ' -c '.$options->{'flagConfig'} if(defined $options->{'flagConfig'});
 	$flag .= ' -v '.$options->{'flagToVcfConfig'} if(defined $options->{'flagToVcfConfig'});
 	$flag .= ' -p '.$options->{'apid'} if(defined $options->{'apid'});
-	if($options->{'seqType'} eq 'pulldown') {
-	  die "ERROR: Pulldown flagging requires annotation BED files" unless(defined $options->{'annot-bed'});
+	if($options->{'seqType'} eq 'WXS' || $options->{'seqType'} eq 'pulldown') {
+	  die "ERROR: Pulldown/WXS flagging requires annotation BED files" unless(defined $options->{'annot-bed'});
 	  $flag .= ' -ab '.$options->{'annot-bed'};	}
 
   my $vcf_gz = $flagged.'.gz';
