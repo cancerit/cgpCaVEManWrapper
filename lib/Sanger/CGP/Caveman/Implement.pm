@@ -1,7 +1,7 @@
 package Sanger::CGP::Caveman::Implement;
 
 ##########LICENCE##########
-#  Copyright (c) 2014 Genome Research Ltd.
+#  Copyright (c) 2014-2017 Genome Research Ltd.
 #
 #  Author: David Jones <cgpit@sanger.ac.uk>
 #
@@ -37,7 +37,7 @@ use PCAP::Threaded;
 use PCAP::Bam;
 
 const my $CAVEMAN_SETUP => q{ setup -t %s -n %s -r %s -g %s -l %s -f %s -c %s -a %s};
-const my $CAVEMAN_SPLIT => q{ split -i %d -f %s};
+const my $CAVEMAN_SPLIT => q{ split -i %d -f %s -e %d};
 const my $CAVEMAN_MSTEP => q{ mstep -i %d -f %s};
 const my $CAVEMAN_MERGE => q{ merge -c %s -p %s -f %s};
 const my $CAVEMAN_ESTEP => q{ estep -i %d -k %f -g %s -o %s -v %s -w %s -f %s -l %s -r %s};
@@ -125,7 +125,7 @@ sub caveman_split {
 	return 1 if PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'), $index);
 
 	my $command = _which('caveman') || die "Unable to find 'caveman' in path";
-	$command .= sprintf($CAVEMAN_SPLIT,$index,$config);
+	$command .= sprintf($CAVEMAN_SPLIT,$index,$config,$options->{'read-count'});
 
 	PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $command, $index);
   	return PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), $index);
