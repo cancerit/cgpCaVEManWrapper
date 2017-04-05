@@ -289,6 +289,7 @@ sub setup {
 					'noflag|no-flagging' => \$opts{'noflag'},
 					'mpc|mut_probability_cutoff=f' => \$opts{'mpc'},
 					'spc|snp_probability_cutoff=f' => \$opts{'spc'},
+					'dbg|debug' => \$opts{'debug_cave'},
   ) or pod2usage(2);
 
   pod2usage(-verbose => 1) if(defined $opts{'h'});
@@ -517,6 +518,7 @@ caveman.pl [options]
     -no-flagging            -noflag Do not flag, instead cleanup at the end of the merged results after estep.
     -mut_probability_cutoff -mpc    Minimum total somatic genotype probability for output
     -snp_probability_cutoff -spc    Minimum total germline genotype probability for output
+    -debug                  -dbg    Run CaVEMan Estep in debug mode
 
   Optional flagging parameters: [default to those found in cgpCaVEManPostProcessing]
     -flagConfig            -c   Config ini file to use for flag list and settings
@@ -638,6 +640,11 @@ Tumour platform to override bam value
 =item B<-no-flagging>
 
 Don't flag the data, just cleanup after merging results
+
+=item B<-debug>
+
+Run the CaVEMan estep in debug mode. This causes CaVEMan to output a
+.dbg.vcf file containing an entry for every analysed position in the genome
 
 =item B<-help>
 
