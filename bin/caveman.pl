@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 
 ##########LICENCE##########
-#  Copyright (c) 2014 Genome Research Ltd.
+#  Copyright (c) 2014-2017 Genome Research Ltd.
 #
 #  Author: David Jones <cgpit@sanger.ac.uk>
 #
@@ -289,6 +289,8 @@ sub setup {
 					'noflag|no-flagging' => \$opts{'noflag'},
 					'mpc|mut_probability_cutoff=f' => \$opts{'mpc'},
 					'spc|snp_probability_cutoff=f' => \$opts{'spc'},
+          'e|read-count=i' => \$opts{'read-count'},
+					'dbg|debug' => \$opts{'debug_cave'},
   ) or pod2usage(2);
 
   pod2usage(-verbose => 1) if(defined $opts{'h'});
@@ -342,6 +344,8 @@ sub setup {
   delete $opts{'process'} unless(defined $opts{'process'});
   delete $opts{'index'} unless(defined $opts{'index'});
   delete $opts{'limit'} unless(defined $opts{'limit'});
+
+  $opts{'read-count'} = 350_000 unless(defined $opts{'read-count'});
 
   PCAP::Cli::file_for_reading('germline-indel-bed',$opts{'germindel'}) if(defined $opts{'germindel'});
   PCAP::Cli::out_dir_check('outdir', $opts{'outdir'});
@@ -517,6 +521,8 @@ caveman.pl [options]
     -no-flagging            -noflag Do not flag, instead cleanup at the end of the merged results after estep.
     -mut_probability_cutoff -mpc    Minimum total somatic genotype probability for output
     -snp_probability_cutoff -spc    Minimum total germline genotype probability for output
+    -read-count             -e      Modify the split size (caveman split) [350,000]
+    -debug                  -dbg    Run CaVEMan Estep in debug mode
 
   Optional flagging parameters: [default to those found in cgpCaVEManPostProcessing]
     -flagConfig            -c   Config ini file to use for flag list and settings
@@ -638,6 +644,15 @@ Tumour platform to override bam value
 =item B<-no-flagging>
 
 Don't flag the data, just cleanup after merging results
+
+=item B<-read-count>
+
+Modify the read count threshold used when splitting into mstep/estep jobs.
+
+=item B<-debug>
+
+Run the CaVEMan estep in debug mode. This causes CaVEMan to output a
+.dbg.vcf file containing an entry for every analysed position in the genome
 
 =item B<-help>
 
