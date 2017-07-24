@@ -1,0 +1,46 @@
+notifications:
+  slack: wtsi-cgpit:ptUMR1tkNyZJYd9TpGoss8WR
+  email: false
+
+env:
+  - CC=gcc
+
+addons:
+  apt:
+    packages:
+      - build-essential # everything
+      - autoconf # biobambam
+      - libtool # biobambam
+      - zlib1g-dev # many
+      - nettle-dev # cgpBigWig
+      - libncurses5-dev # samtools
+      - unzip # kentools/pcap
+      - libcurl4-openssl-dev # many
+
+install: true
+
+language: perl
+
+perl:
+  - "5.22"
+
+script:
+  - git clone --depth 1 --single-branch --branch develop https://github.com/cancerit/cgpBigWig.git
+  - cd cgpBigWig
+  - ./setup.sh $HOME/install
+  - cd ../
+  - git clone --depth 1 --single-branch --branch develop https://github.com/cancerit/PCAP-core.git
+  - cd PCAP-core
+  - ./setup.sh $HOME/install
+  - cd ../
+  - git clone --depth 1 --single-branch --branch dev https://github.com/cancerit/cgpVcf.git
+  - cd cgpVcf
+  - ./setup.sh $HOME/install
+  - git clone --depth 1 --single-branch --branch dev https://github.com/cancerit/cgpCaVEManPostProcessing.git
+  - cd cgpCaVEManPostProcessing
+  - ./setup.sh $HOME/install
+  - cd ../
+  - ./setup.sh $HOME/install
+
+dist: trusty
+sudo: false
