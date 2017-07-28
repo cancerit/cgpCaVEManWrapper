@@ -42,6 +42,8 @@ script:
   - ./setup.sh $HOME/install
   - cd ../
   - ./setup.sh $HOME/install
+  - cd ../
+  - perl -I $HOME/install/lib/perl5 ~/install/bin/caveman.pl -v
 
 dist: trusty
 sudo: false
