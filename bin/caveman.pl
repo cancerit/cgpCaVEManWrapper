@@ -439,8 +439,8 @@ sub setup {
 
   $opts{'splitList'} = File::Spec->catfile($opts{'tmp'},"splitList");
 	#vcf concat subs & snps
-  $opts{'subvcf'} = File::Spec->catfile($opts{'tmp'},"results/%/%.muts.vcf");
-  $opts{'snpvcf'} = File::Spec->catfile($opts{'tmp'},"results/%/%.snps.vcf");
+  $opts{'subvcf'} = File::Spec->catfile($opts{'tmp'},"results/%/%.muts.vcf.gz");
+  $opts{'snpvcf'} = File::Spec->catfile($opts{'tmp'},"results/%/%.snps.vcf.gz");
 	#bed concat no_analysis
   $opts{'noanalysisbed'} = File::Spec->catfile($opts{'tmp'},"results/%/%.no_analysis.bed");
 
