@@ -255,12 +255,12 @@ sub caveman_merge_results {
 	my $out = $options->{'out_file'};
 	my $splitList = File::Spec->catfile($tmp, 'splitList');
 
-	my $command = sprintf($MERGE_CAVEMAN_RESULTS,$splitList,$out.".muts.vcf.gz",$options->{'subvcf'});
+	my $command = sprintf($MERGE_CAVEMAN_RESULTS,$splitList,$out.".muts.vcf",$options->{'subvcf'});
 	PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $command, 0)
 								unless (PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'), 'merge_muts', 0));
 	PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), 'merge_muts', 0);
 
-	$command = sprintf($MERGE_CAVEMAN_RESULTS,$splitList,$out.".snps.vcf.gz",$options->{'snpvcf'});
+	$command = sprintf($MERGE_CAVEMAN_RESULTS,$splitList,$out.".snps.vcf",$options->{'snpvcf'});
 	PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $command, 0)
 								unless (PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'), 'merge_snps', 0));
 	PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), 'merge_snps', 0);
