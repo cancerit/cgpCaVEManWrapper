@@ -36,11 +36,14 @@ script:
   - git clone --depth 1 --single-branch --branch dev https://github.com/cancerit/cgpVcf.git
   - cd cgpVcf
   - ./setup.sh $HOME/install
+  - cd ../
   - git clone --depth 1 --single-branch --branch dev https://github.com/cancerit/cgpCaVEManPostProcessing.git
   - cd cgpCaVEManPostProcessing
   - ./setup.sh $HOME/install
   - cd ../
   - ./setup.sh $HOME/install
+  - cd ../
+  - perl -I $HOME/install/lib/perl5 ~/install/bin/caveman.pl -v
 
 dist: trusty
 sudo: false
