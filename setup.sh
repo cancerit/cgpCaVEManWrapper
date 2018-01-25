@@ -21,7 +21,7 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 ##########LICENCE##########
 
-CAVEMAN_CORE="https://github.com/cancerit/CaVEMan/archive/1.12.0.tar.gz"
+CAVEMAN_CORE="https://github.com/cancerit/CaVEMan/archive/feature/overlapping_reads.tar.gz"
 
 get_distro () {
   if hash curl 2>/dev/null; then
