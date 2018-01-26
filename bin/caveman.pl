@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 
 ##########LICENCE##########
-#  Copyright (c) 2014-2017 Genome Research Ltd.
+#  Copyright (c) 2014-2018 Genome Research Ltd.
 #
 #  Author: David Jones <cgpit@sanger.ac.uk>
 #
@@ -64,6 +64,7 @@ const my $IDS_MUTS_GZ => q{%s.muts.ids.vcf.gz};
 const my $IDS_MUTS_TBI => q{%s.muts.ids.vcf.gz.tbi};
 const my $NO_ANALYSIS => q{%s.no_analysis.bed};
 const my $SP_ASS_MESSAGE => qq{%s defined at commandline (%s) does not match that in the BAM file (%s). Defaulting to BAM file value.\n};
+const my $SPLIT_LINE_COUNT => 1000;
 
 const my @VALID_PROTOCOLS => qw(WGS WXS RNA);
 const my @PERMITTED_SEQ_TYPES => qw(pulldown|exome|genome|genomic|followup|targeted|rna_seq);
@@ -90,6 +91,7 @@ my %index_max = ( 'setup' => 1,
 	$threads->add_function('caveman_split', \&Sanger::CGP::Caveman::Implement::caveman_split);
 	$threads->add_function('caveman_mstep', \&Sanger::CGP::Caveman::Implement::caveman_mstep);
   $threads->add_function('caveman_estep', \&Sanger::CGP::Caveman::Implement::caveman_estep);
+  $threads->add_function('caveman_flag', \&Sanger::CGP::Caveman::Implement::caveman_flag);
 
   # this is here just to make the reference usable if not the same samtools version
   my $ref = $options->{'reference'};
@@ -168,15 +170,28 @@ my %index_max = ( 'setup' => 1,
 	if((!exists $options->{'process'} || $options->{'process'} eq 'flag')
         && (!defined $options->{'noflag'} || $options->{'noflag'} != 1)){
 		$options->{'for_flagging'} = $options->{'ids_muts_file'};
+    $options->{'for_split'} = $options->{'ids_muts_file'};
+    $options->{'split_out'} = $options->{'ids_muts_file'}.'split';
+    $options->{'split_lines'} = $SPLIT_LINE_COUNT;
+    #Split flagging file
+    Sanger::CGP::Caveman::Implement::caveman_split_vcf($options);
+    #Count flag target
+    $options->{'vcf_split_count'} = Sanger::CGP::Caveman::Implement::count_files($options,$options->{'split_out'}.'*');
+    #flag each as an array
+    #Run the flagging code with number of split jobs.
+    $threads->run($options->{'vcf_split_count'}, 'caveman_flag', $options);
+    #concatenate flagged files into a single flagged output file
+    Sanger::CGP::Caveman::Implement::concat_flagged($options);
+    #Gzip and index output flagged file
+    Sanger::CGP::Caveman::Implement::zip_flagged($options);
 		$options->{'flagged'} = sprintf($FLAGGED_MUTS,$options->{'out_file'});
-		Sanger::CGP::Caveman::Implement::caveman_flag($options);
 	}
 
 	if((!exists $options->{'process'}) #We aren't specifying steps
 	    || ($options->{'process'} eq 'flag') #We've flagged so we are done anyway
 	    || ($options->{'noflag'} == 1 && $options->{'process'} eq 'add_ids')){ #No flagging wanted and preflagging step done
 	  #finally cleanup after ourselves by removing the temporary output folder, split files etc.
-	  #TODO Zip the snps files with IDs
+	  #Zip the snps files with IDs
 	  Sanger::CGP::Caveman::Implement::pre_cleanup_zip($options);
     cleanup($options);
   }
