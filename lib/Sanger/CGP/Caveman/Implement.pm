@@ -364,10 +364,7 @@ sub caveman_flag {
     $flag .= ' -c '.$options->{'flagConfig'} if(defined $options->{'flagConfig'});
   	$flag .= ' -v '.$options->{'flagToVcfConfig'} if(defined $options->{'flagToVcfConfig'});
   	$flag .= ' -p '.$options->{'apid'} if(defined $options->{'apid'});
-  	if($options->{'seqType'} eq 'WXS' || $options->{'seqType'} eq 'pulldown') {
-  	  die "ERROR: Pulldown/WXS flagging requires annotation BED files" unless(defined $options->{'annot-bed'});
-  	  $flag .= ' -ab '.$options->{'annot-bed'};
-    }
+    $flag .= ' -ab '.$options->{'annot-bed'} if(defined $options->{'annot-bed'});
 
     PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $flag, $index);
     PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), $index);
