@@ -178,13 +178,13 @@ my %index_max = ( 'setup' => 1,
     #Count flag target
     $options->{'vcf_split_count'} = Sanger::CGP::Caveman::Implement::count_files($options,$options->{'split_out'}.'*');
     #flag each as an array
+    $options->{'flagged'} = sprintf($FLAGGED_MUTS,$options->{'out_file'});
     #Run the flagging code with number of split jobs.
     $threads->run($options->{'vcf_split_count'}, 'caveman_flag', $options);
     #concatenate flagged files into a single flagged output file
     Sanger::CGP::Caveman::Implement::concat_flagged($options);
     #Gzip and index output flagged file
     Sanger::CGP::Caveman::Implement::zip_flagged($options);
-		$options->{'flagged'} = sprintf($FLAGGED_MUTS,$options->{'out_file'});
 	}
 
 	if((!exists $options->{'process'}) #We aren't specifying steps
