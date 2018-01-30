@@ -1,7 +1,7 @@
 package Sanger::CGP::Caveman::Implement;
 
 ##########LICENCE##########
-#  Copyright (c) 2014-2017 Genome Research Ltd.
+#  Copyright (c) 2014-2018 Genome Research Ltd.
 #
 #  Author: David Jones <cgpit@sanger.ac.uk>
 #
@@ -28,6 +28,7 @@ use File::Which qw(which);
 use FindBin qw($Bin);
 use autodie qw(:all);
 use Const::Fast qw(const);
+use Capture::Tiny qw(capture);
 use File::Basename;
 
 use Sanger::CGP::Caveman;
@@ -51,9 +52,13 @@ const my $CAVEMAN_VCF_IDS => q{ -i %s -o %s};
 const my $CAVEMAN_MUT_PROB_CUTOFF => q{ -p %f};
 const my $CAVEMAN_SNP_PROB_CUTOFF => q{ -q %f};
 const my $CAVEMAN_DEBUG_MODE => q{ -s};
+const my $CAVEMAN_VCF_SPLIT => q{ -i %s -o %s -s -l %d};
+const my $CAVEMAN_VCF_FLAGGED_CONCAT => q{vcf-concat %s | vcf-sort > %s};
+const my $FILE_COUNT => q{ls -1 %s | wc -l};
 
 const my $FLAG_SCRIPT => q{cgpFlagCaVEMan.pl};
 const my $IDS_SCRIPT => q{cgpAppendIdsToVcf.pl};
+const my $VCF_SPLIT_SCRIPT => q{cgpVCFSplit.pl};
 
 sub prepare {
   my $options = shift;
@@ -131,7 +136,7 @@ sub caveman_split {
   	return PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), $index);
 }
 
-sub caveman_merge{
+sub caveman_merge {
 	# uncoverable subroutine
 	my $options = shift;
 
@@ -149,7 +154,7 @@ sub caveman_merge{
 	return PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), 0);
 }
 
-sub caveman_mstep{
+sub caveman_mstep {
 	# uncoverable subroutine
 	my ($index_in,$options) = @_;
 
@@ -174,7 +179,7 @@ sub caveman_mstep{
   return 1;
 }
 
-sub caveman_estep{
+sub caveman_estep {
 	# uncoverable subroutine
 	my ($index_in,$options) = @_;
 
@@ -273,7 +278,7 @@ sub caveman_merge_results {
 	return 1;
 }
 
-sub caveman_add_vcf_ids{
+sub caveman_add_vcf_ids {
 	# uncoverable subroutine
 	my ($options, $snps_or_muts) = @_;
 	my $tmp = $options->{'tmp'};
@@ -291,39 +296,103 @@ sub caveman_add_vcf_ids{
 	return PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), $snps_or_muts);
 }
 
-sub caveman_flag{
-	# uncoverable subroutine
+sub caveman_split_vcf {
+  # uncoverable subroutine
 	my $options = shift;
+  my $tmp = $options->{'tmp'};
+  my $infile = $options->{'for_split'};
+  my $outstub = $options->{'split_out'};
+  my $split_lines = $options->{'split_lines'};
+
+  return 1 if PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'),0);
+
+  my $script = _which($VCF_SPLIT_SCRIPT) ||  die "Unable to find '$VCF_SPLIT_SCRIPT' in path";
+	my $command = $^X.' '.$script;
+	$command .= sprintf($CAVEMAN_VCF_SPLIT,
+														$infile,
+														$outstub,
+                            $split_lines);
+  PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $command, 0);
+	return PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), 0);
+}
+
+sub count_files {
+  # uncoverable subroutine
+	my ($options,$match) = @_;
+  my $tmp = $options->{'tmp'};
+  my $command = sprintf($FILE_COUNT,$match);
+  my ($stdout, $stderr, $exit) = capture {
+    system($command);
+  };
+  die "ERROR: ($stderr) Encountered counting split files for flagging. Searching $match" unless($exit==0);
+  chomp($stdout);
+  $stdout =~ s/\s+//g;
+  return $stdout;
+}
+
+sub caveman_flag {
+  # uncoverable subroutine
+  my ($index_in,$options) = @_;
+
+  # first handle the easy bit, skip if limit not set
+  return 1 if(exists $options->{'index'} && $index_in != $options->{'index'});
+
+  my @indicies = limited_flag_indicies($options, $index_in);
+
 	my $tmp = $options->{'tmp'};
-	my $for_flagging = $options->{'for_flagging'};
-	my $flagged = $options->{'flagged'};
 	my $tumbam = $options->{'tumbam'};
 	my $normbam = $options->{'normbam'};
 	my $ref = $options->{'reference'};
 
-	return 1 if PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'), 0);
-	my $script = _which($FLAG_SCRIPT) || die "Unable to find '$FLAG_SCRIPT' in path";
-	my $flag = $^X.' '.$script;
-	$flag .= sprintf($CAVEMAN_FLAG,
-            $for_flagging,
-            $flagged,
-            q{'}.$options->{'species'}.q{'},
-            $tumbam,
-            $normbam,
-            $options->{'flag-bed'},
-            $options->{'germindel'},
-            $options->{'unmatchedvcf'},
-            $ref,
-            $options->{'seqType'}
-            );
+  for my $index(@indicies) {
+    next if PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'), $index);
+    my $script = _which($FLAG_SCRIPT) || die "Unable to find '$FLAG_SCRIPT' in path";
+  	my $flag = $^X.' '.$script;
+  	$flag .= sprintf($CAVEMAN_FLAG,
+              $options->{'split_out'}.".$index",
+              $options->{'flagged'}.".$index",
+              q{'}.$options->{'species'}.q{'},
+              $tumbam,
+              $normbam,
+              $options->{'flag-bed'},
+              $options->{'germindel'},
+              $options->{'unmatchedvcf'},
+              $ref,
+              $options->{'seqType'}
+              );
 
-	$flag .= ' -c '.$options->{'flagConfig'} if(defined $options->{'flagConfig'});
-	$flag .= ' -v '.$options->{'flagToVcfConfig'} if(defined $options->{'flagToVcfConfig'});
-	$flag .= ' -p '.$options->{'apid'} if(defined $options->{'apid'});
-	if($options->{'seqType'} eq 'WXS' || $options->{'seqType'} eq 'pulldown') {
-	  die "ERROR: Pulldown/WXS flagging requires annotation BED files" unless(defined $options->{'annot-bed'});
-	  $flag .= ' -ab '.$options->{'annot-bed'};	}
+    $flag .= ' -c '.$options->{'flagConfig'} if(defined $options->{'flagConfig'});
+  	$flag .= ' -v '.$options->{'flagToVcfConfig'} if(defined $options->{'flagToVcfConfig'});
+  	$flag .= ' -p '.$options->{'apid'} if(defined $options->{'apid'});
+    $flag .= ' -ab '.$options->{'annot-bed'} if(defined $options->{'annot-bed'});
 
+    PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $flag, $index);
+    PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), $index);
+
+  }
+
+  return 1;
+}
+
+sub concat_flagged {
+  # uncoverable subroutine
+	my $options = shift;
+	my $tmp = $options->{'tmp'};
+
+  return 1 if PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'),0);
+  my $command = sprintf($CAVEMAN_VCF_FLAGGED_CONCAT,
+                  $options->{'flagged'}.".*",
+                  $options->{'flagged'});
+
+  PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $command, 0);
+  return PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), 0);
+}
+
+sub zip_flagged{
+  # uncoverable subroutine
+	my $options = shift;
+	my $tmp = $options->{'tmp'};
+  my $flagged = $options->{'flagged'};
   my $vcf_gz = $flagged.'.gz';
   my $bgzip = _which('bgzip');
   $bgzip .= sprintf ' -c %s > %s', $flagged, $vcf_gz;
@@ -331,8 +400,7 @@ sub caveman_flag{
   my $tabix = _which('tabix');
   $tabix .= sprintf ' -p vcf %s', $vcf_gz;
 
-
-  my @commands = ($flag, $bgzip, $tabix);
+  my @commands = ($bgzip, $tabix);
 
 	PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), \@commands, 0);
 	return PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), 0);
