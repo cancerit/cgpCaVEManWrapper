@@ -326,12 +326,13 @@ sub setup {
   PCAP::Cli::file_for_reading('reference',$opts{'reference'});
   PCAP::Cli::file_for_reading('tumour-bam',$opts{'tumbam'});
   PCAP::Cli::file_for_reading('normal-bam',$opts{'normbam'});
-  #We should also check the bam indexes exist.
-  my $tumidx = $opts{'tumbam'}.".bai";
-  my $normidx = $opts{'normbam'}.".bai";
-  PCAP::Cli::file_for_reading('tumour-bai',$tumidx);
-  PCAP::Cli::file_for_reading('normal-bai',$normidx);
   PCAP::Cli::file_for_reading('ignore-file',$opts{'ignore'});
+
+  #We should also check an index exist.
+  for my $op(qw(normbam tumbam)) {
+    pod2usage(-message  => "\nERROR: $op |".$opts{$op}."| cannot locate index file.\n", -verbose => 1,  -output => \*STDERR)
+      unless(-f $opts{$op}.'.bai' || -f $opts{$op}.'.csi' || -f $opts{$op}.'.crai');
+  }
 
   if(exists($opts{'tumcn'}) && defined($opts{'tumcn'})){
     if(-e $opts{'tumcn'}) {
