@@ -116,8 +116,12 @@ my %index_max = ( 'setup' => 1,
 
 	if(!exists $options->{'process'} || $options->{'process'} eq 'split'){
 		$options->{'out_file'} = $options->{'splitList'};
-		my $contig_count = Sanger::CGP::Caveman::Implement::file_line_count($options->{'reference'});
+    my $valid_fai_idx = Sanger::CGP::Caveman::Implement::valid_seq_indexes($options);
+		my $contig_count = scalar @{$valid_fai_idx};
+    $options->{'valid_fai_idx'} = $valid_fai_idx;
+    #= Sanger::CGP::Caveman::Implement::file_line_count($options->{'reference'});
 		$threads->run($contig_count, 'caveman_split', $options);
+    delete $options->{'valid_fai_idx'};
 	}
 
   if(!exists $options->{'process'} || $options->{'process'} eq 'split_concat'){
@@ -305,6 +309,7 @@ sub setup {
 					'mpc|mut_probability_cutoff=f' => \$opts{'mpc'},
 					'spc|snp_probability_cutoff=f' => \$opts{'spc'},
           'e|read-count=i' => \$opts{'read-count'},
+          'x|exclude=s' => \$opts{'exclude'},
 					'dbg|debug' => \$opts{'debug_cave'},
   ) or pod2usage(2);
 
@@ -360,6 +365,7 @@ sub setup {
   delete $opts{'process'} unless(defined $opts{'process'});
   delete $opts{'index'} unless(defined $opts{'index'});
   delete $opts{'limit'} unless(defined $opts{'limit'});
+  delete $opts{'exclude'} unless(defined $opts{'exclude'});
 
   $opts{'read-count'} = 350_000 unless(defined $opts{'read-count'});
 

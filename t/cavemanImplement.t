@@ -33,6 +33,7 @@ my $test_data = "$Bin/../testData";
 my $good_fq = File::Spec->catfile($test_data, '1_2.fq');
 my $bad_fq = File::Spec->catfile($test_data, '1_2_bad.fq');
 my $out_prefix = File::Spec->catfile($test_data, 'sample');
+my $fai = File::Spec->catfile($test_data, 'genome.fa.fai');
 my $tmp = $test_data;
 
 subtest 'Initialisation checks' => sub {
@@ -42,6 +43,11 @@ subtest 'Initialisation checks' => sub {
 subtest 'Line count checks' => sub {
 	is(Sanger::CGP::Caveman::Implement::file_line_count($good_fq),$LINES_PER_FQ,'Line count correct');
 	isnt(Sanger::CGP::Caveman::Implement::file_line_count($bad_fq),$LINES_PER_FQ,'Line count correct (2)');
+};
+
+subtest 'exclude contig checks' => sub {
+  my $idx = Sanger::CGP::Caveman::Implement::valid_seq_indexes({'reference' => $fai, 'exclude' => 'GL%'});
+  is(scalar @{$idx}, 27, 'Limiting to require contigs via exclude');
 };
 
 subtest 'Indicies limits' => sub {
