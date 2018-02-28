@@ -21,6 +21,8 @@ There are pre-built images containing this codebase on quay.io.
 
 These were primarily designed for use with dockstore.org but can be used as normal containers.
 
+The docker images are know to work correctly after import into a singularity image.
+
 ## Dependencies/Install
 Please install the following first:
 
