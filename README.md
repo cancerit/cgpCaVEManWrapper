@@ -60,7 +60,7 @@ This will automatically get the appropriate version of the core [CaVEMan][cavema
 ```
 Copyright (c) 2014-2018 Genome Research Ltd.
 
-Author: Cancer Genome Project <cgpit@sanger.ac.uk>
+Author: CASM/Cancer IT <cgphelp@sanger.ac.uk>
 
 This file is part of cgpCaVEManWrapper.
 
