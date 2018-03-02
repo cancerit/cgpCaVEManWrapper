@@ -46,7 +46,7 @@ const my $CAVEMAN_ESTEP_MUT_PRIOR_EXT => q{ -c %s};
 const my $CAVEMAN_ESTEP_SNP_PRIOR_EXT => q{ -d %s};
 const my $CAVEMAN_ESTEP_NPLATFORM_EXT => q{ -P %s};
 const my $CAVEMAN_ESTEP_TPLATFORM_EXT => q{ -T %s};
-const my $CAVEMAN_FLAG => q{ -i %s -o %s -s %s -m %s -n %s -b %s -g %s -umv %s -ref %s -t %s};
+const my $CAVEMAN_FLAG => q{ -i %s -o %s -s %s -m %s -n %s -b %s -g %s -umv %s -ref %s -t %s -sa %s};
 const my $MERGE_CAVEMAN_RESULTS => q{ mergeCavemanResults -s %s -o %s -f %s};
 const my $CAVEMAN_VCF_IDS => q{ -i %s -o %s};
 const my $CAVEMAN_MUT_PROB_CUTOFF => q{ -p %f};
@@ -358,7 +358,8 @@ sub caveman_flag {
               $options->{'germindel'},
               $options->{'unmatchedvcf'},
               $ref,
-              $options->{'seqType'}
+              $options->{'seqType'},
+              $options->{'species-assembly'}
               );
 
     $flag .= ' -c '.$options->{'flagConfig'} if(defined $options->{'flagConfig'});
