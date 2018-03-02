@@ -3,7 +3,7 @@
 ##########LICENCE##########
 #  Copyright (c) 2014-2018 Genome Research Ltd.
 #
-#  Author: David Jones <cgpit@sanger.ac.uk>
+#  Author: CASM/Cancer IT <cgphelp@sanger.ac.uk>
 #
 #  This file is part of cgpCaVEManWrapper.
 #
@@ -116,8 +116,12 @@ my %index_max = ( 'setup' => 1,
 
 	if(!exists $options->{'process'} || $options->{'process'} eq 'split'){
 		$options->{'out_file'} = $options->{'splitList'};
-		my $contig_count = Sanger::CGP::Caveman::Implement::file_line_count($options->{'reference'});
+    my $valid_fai_idx = Sanger::CGP::Caveman::Implement::valid_seq_indexes($options);
+		my $contig_count = scalar @{$valid_fai_idx};
+    $options->{'valid_fai_idx'} = $valid_fai_idx;
+    #= Sanger::CGP::Caveman::Implement::file_line_count($options->{'reference'});
 		$threads->run($contig_count, 'caveman_split', $options);
+    delete $options->{'valid_fai_idx'};
 	}
 
   if(!exists $options->{'process'} || $options->{'process'} eq 'split_concat'){
@@ -305,6 +309,7 @@ sub setup {
 					'mpc|mut_probability_cutoff=f' => \$opts{'mpc'},
 					'spc|snp_probability_cutoff=f' => \$opts{'spc'},
           'e|read-count=i' => \$opts{'read-count'},
+          'x|exclude=s' => \$opts{'exclude'},
 					'dbg|debug' => \$opts{'debug_cave'},
   ) or pod2usage(2);
 
@@ -326,12 +331,13 @@ sub setup {
   PCAP::Cli::file_for_reading('reference',$opts{'reference'});
   PCAP::Cli::file_for_reading('tumour-bam',$opts{'tumbam'});
   PCAP::Cli::file_for_reading('normal-bam',$opts{'normbam'});
-  #We should also check the bam indexes exist.
-  my $tumidx = $opts{'tumbam'}.".bai";
-  my $normidx = $opts{'normbam'}.".bai";
-  PCAP::Cli::file_for_reading('tumour-bai',$tumidx);
-  PCAP::Cli::file_for_reading('normal-bai',$normidx);
   PCAP::Cli::file_for_reading('ignore-file',$opts{'ignore'});
+
+  #We should also check an index exist.
+  for my $op(qw(normbam tumbam)) {
+    pod2usage(-message  => "\nERROR: $op |".$opts{$op}."| cannot locate index file.\n", -verbose => 1,  -output => \*STDERR)
+      unless(-f $opts{$op}.'.bai' || -f $opts{$op}.'.csi' || -f $opts{$op}.'.crai');
+  }
 
   if(exists($opts{'tumcn'}) && defined($opts{'tumcn'})){
     if(-e $opts{'tumcn'}) {
@@ -359,6 +365,7 @@ sub setup {
   delete $opts{'process'} unless(defined $opts{'process'});
   delete $opts{'index'} unless(defined $opts{'index'});
   delete $opts{'limit'} unless(defined $opts{'limit'});
+  delete $opts{'exclude'} unless(defined $opts{'exclude'});
 
   $opts{'read-count'} = 350_000 unless(defined $opts{'read-count'});
 

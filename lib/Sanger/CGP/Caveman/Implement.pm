@@ -3,7 +3,7 @@ package Sanger::CGP::Caveman::Implement;
 ##########LICENCE##########
 #  Copyright (c) 2014-2018 Genome Research Ltd.
 #
-#  Author: David Jones <cgpit@sanger.ac.uk>
+#  Author: CASM/Cancer IT <cgphelp@sanger.ac.uk>
 #
 #  This file is part of cgpCaVEManWrapper.
 #
@@ -29,6 +29,7 @@ use FindBin qw($Bin);
 use autodie qw(:all);
 use Const::Fast qw(const);
 use Capture::Tiny qw(capture);
+use List::Util qw(first);
 use File::Basename;
 
 use Sanger::CGP::Caveman;
@@ -130,7 +131,11 @@ sub caveman_split {
 	return 1 if PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'), $index);
 
 	my $command = _which('caveman') || die "Unable to find 'caveman' in path";
-	$command .= sprintf($CAVEMAN_SPLIT,$index,$config,$options->{'read-count'});
+
+	$command .= sprintf($CAVEMAN_SPLIT,
+                      $options->{'valid_fai_idx'}->[$index-1], # only process the contigs we care about
+                      $config,
+                      $options->{'read-count'});
 
 	PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $command, $index);
   	return PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), $index);
@@ -270,9 +275,13 @@ sub caveman_merge_results {
 								unless (PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'), 'merge_snps', 0));
 	PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), 'merge_snps', 0);
 
-	$command = sprintf($MERGE_CAVEMAN_RESULTS,$splitList,$out.".no_analysis.bed",$options->{'noanalysisbed'});
-	PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $command, 0)
-								unless (PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'), 'merge_no_analysis', 0));
+  unless (PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'), 'merge_no_analysis', 0)) {
+  	$command = sprintf($MERGE_CAVEMAN_RESULTS,$splitList,$out.".no_analysis.bed",$options->{'noanalysisbed'});
+  	PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $command, 0);
+    extend_no_analysis($options, $out.'.no_analysis.bed');
+  }
+
+
 	PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), 'merge_no_analysis', 0);
 
 	return 1;
@@ -473,6 +482,52 @@ sub concat {
 
 	return PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), 0);
 
+}
+
+sub load_exclude {
+  my $options = shift;
+  my @exclude_patt;
+  if(exists $options->{'exclude'}) {
+    my @exclude = split /,/, $options->{'exclude'};
+    for my $ex(@exclude) {
+      $ex =~ s/%/.+/;
+      push @exclude_patt, $ex;
+    }
+  }
+  return @exclude_patt;
+}
+
+sub valid_seq_indexes {
+  my $options = shift;
+
+  my @exclude_patt = load_exclude($options);
+
+  my @good_sq_idx;
+  open my $FAI_IN, '<', $options->{'reference'};
+  while(<$FAI_IN>) {
+    my $sq = (split /\t/, $_)[0];
+    # if doesn't match keep
+    push @good_sq_idx, $. unless(first { $sq =~ m/^$_$/ } @exclude_patt);
+  }
+  close $FAI_IN;
+
+  return \@good_sq_idx;
+}
+
+sub extend_no_analysis {
+  my ($options, $no_analysis) = @_;
+  my @exclude_patt = load_exclude($options);
+  return if(@exclude_patt == 0);
+
+  open my $na_fh, '>>', $no_analysis;
+  open my $FAI_IN, '<', $options->{'reference'};
+  while(<$FAI_IN>) {
+    my ($sq, $len) = (split /\t/, $_)[0..1];
+    # if matches then print
+    printf $na_fh "%s\t0\t%d\n", $sq, $len if(first { $sq =~ m/^$_$/ } @exclude_patt);
+  }
+  close $FAI_IN;
+  close $na_fh
 }
 
 sub valid_index{

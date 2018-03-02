@@ -1,9 +1,9 @@
 #!/bin/bash
 
 ##########LICENCE##########
-#  Copyright (c) 2014,2015,2016 Genome Research Ltd.
+#  Copyright (c) 2014-2018 Genome Research Ltd.
 #
-#  Author: David Jones <cgpit@sanger.ac.uk>
+#  Author: CASM/Cancer IT <cgphelp@sanger.ac.uk>
 #
 #  This file is part of cgpCaVEManWrapper.
 #
@@ -21,7 +21,7 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 ##########LICENCE##########
 
-CAVEMAN_CORE="https://github.com/cancerit/CaVEMan/archive/1.12.0.tar.gz"
+CAVEMAN_CORE="https://github.com/cancerit/CaVEMan/archive/1.13.0-rc1.tar.gz"
 
 get_distro () {
   if hash curl 2>/dev/null; then
