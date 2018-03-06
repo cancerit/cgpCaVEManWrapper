@@ -1,9 +1,9 @@
 #!/usr/bin/perl
 
 ##########LICENCE##########
-#  Copyright (c) 2014-2017 Genome Research Ltd.
+#  Copyright (c) 2014-2018 Genome Research Ltd.
 #
-#  Author: David Jones <cgpit@sanger.ac.uk>
+#  Author: CASM/Cancer IT <cgphelp@sanger.ac.uk>
 #
 #  This file is part of cgpCaVEManWrapper.
 #
@@ -64,6 +64,7 @@ const my $IDS_MUTS_GZ => q{%s.muts.ids.vcf.gz};
 const my $IDS_MUTS_TBI => q{%s.muts.ids.vcf.gz.tbi};
 const my $NO_ANALYSIS => q{%s.no_analysis.bed};
 const my $SP_ASS_MESSAGE => qq{%s defined at commandline (%s) does not match that in the BAM file (%s). Defaulting to BAM file value.\n};
+const my $SPLIT_LINE_COUNT => 1000;
 
 const my @VALID_PROTOCOLS => qw(WGS WXS RNA);
 const my @PERMITTED_SEQ_TYPES => qw(pulldown|exome|genome|genomic|followup|targeted|rna_seq);
@@ -90,6 +91,7 @@ my %index_max = ( 'setup' => 1,
 	$threads->add_function('caveman_split', \&Sanger::CGP::Caveman::Implement::caveman_split);
 	$threads->add_function('caveman_mstep', \&Sanger::CGP::Caveman::Implement::caveman_mstep);
   $threads->add_function('caveman_estep', \&Sanger::CGP::Caveman::Implement::caveman_estep);
+  $threads->add_function('caveman_flag', \&Sanger::CGP::Caveman::Implement::caveman_flag);
 
   # this is here just to make the reference usable if not the same samtools version
   my $ref = $options->{'reference'};
@@ -114,8 +116,12 @@ my %index_max = ( 'setup' => 1,
 
 	if(!exists $options->{'process'} || $options->{'process'} eq 'split'){
 		$options->{'out_file'} = $options->{'splitList'};
-		my $contig_count = Sanger::CGP::Caveman::Implement::file_line_count($options->{'reference'});
+    my $valid_fai_idx = Sanger::CGP::Caveman::Implement::valid_seq_indexes($options);
+		my $contig_count = scalar @{$valid_fai_idx};
+    $options->{'valid_fai_idx'} = $valid_fai_idx;
+    #= Sanger::CGP::Caveman::Implement::file_line_count($options->{'reference'});
 		$threads->run($contig_count, 'caveman_split', $options);
+    delete $options->{'valid_fai_idx'};
 	}
 
   if(!exists $options->{'process'} || $options->{'process'} eq 'split_concat'){
@@ -168,15 +174,28 @@ my %index_max = ( 'setup' => 1,
 	if((!exists $options->{'process'} || $options->{'process'} eq 'flag')
         && (!defined $options->{'noflag'} || $options->{'noflag'} != 1)){
 		$options->{'for_flagging'} = $options->{'ids_muts_file'};
-		$options->{'flagged'} = sprintf($FLAGGED_MUTS,$options->{'out_file'});
-		Sanger::CGP::Caveman::Implement::caveman_flag($options);
+    $options->{'for_split'} = $options->{'ids_muts_file'};
+    $options->{'split_out'} = $options->{'ids_muts_file'}.'split';
+    $options->{'split_lines'} = $SPLIT_LINE_COUNT;
+    #Split flagging file
+    Sanger::CGP::Caveman::Implement::caveman_split_vcf($options);
+    #Count flag target
+    $options->{'vcf_split_count'} = Sanger::CGP::Caveman::Implement::count_files($options,$options->{'split_out'}.'*');
+    #flag each as an array
+    $options->{'flagged'} = sprintf($FLAGGED_MUTS,$options->{'out_file'});
+    #Run the flagging code with number of split jobs.
+    $threads->run($options->{'vcf_split_count'}, 'caveman_flag', $options);
+    #concatenate flagged files into a single flagged output file
+    Sanger::CGP::Caveman::Implement::concat_flagged($options);
+    #Gzip and index output flagged file
+    Sanger::CGP::Caveman::Implement::zip_flagged($options);
 	}
 
 	if((!exists $options->{'process'}) #We aren't specifying steps
 	    || ($options->{'process'} eq 'flag') #We've flagged so we are done anyway
 	    || ($options->{'noflag'} == 1 && $options->{'process'} eq 'add_ids')){ #No flagging wanted and preflagging step done
 	  #finally cleanup after ourselves by removing the temporary output folder, split files etc.
-	  #TODO Zip the snps files with IDs
+	  #Zip the snps files with IDs
 	  Sanger::CGP::Caveman::Implement::pre_cleanup_zip($options);
     cleanup($options);
   }
@@ -290,6 +309,7 @@ sub setup {
 					'mpc|mut_probability_cutoff=f' => \$opts{'mpc'},
 					'spc|snp_probability_cutoff=f' => \$opts{'spc'},
           'e|read-count=i' => \$opts{'read-count'},
+          'x|exclude=s' => \$opts{'exclude'},
 					'dbg|debug' => \$opts{'debug_cave'},
   ) or pod2usage(2);
 
@@ -311,12 +331,13 @@ sub setup {
   PCAP::Cli::file_for_reading('reference',$opts{'reference'});
   PCAP::Cli::file_for_reading('tumour-bam',$opts{'tumbam'});
   PCAP::Cli::file_for_reading('normal-bam',$opts{'normbam'});
-  #We should also check the bam indexes exist.
-  my $tumidx = $opts{'tumbam'}.".bai";
-  my $normidx = $opts{'normbam'}.".bai";
-  PCAP::Cli::file_for_reading('tumour-bai',$tumidx);
-  PCAP::Cli::file_for_reading('normal-bai',$normidx);
   PCAP::Cli::file_for_reading('ignore-file',$opts{'ignore'});
+
+  #We should also check an index exist.
+  for my $op(qw(normbam tumbam)) {
+    pod2usage(-message  => "\nERROR: $op |".$opts{$op}."| cannot locate index file.\n", -verbose => 1,  -output => \*STDERR)
+      unless(-f $opts{$op}.'.bai' || -f $opts{$op}.'.csi' || -f $opts{$op}.'.crai');
+  }
 
   if(exists($opts{'tumcn'}) && defined($opts{'tumcn'})){
     if(-e $opts{'tumcn'}) {
@@ -344,6 +365,7 @@ sub setup {
   delete $opts{'process'} unless(defined $opts{'process'});
   delete $opts{'index'} unless(defined $opts{'index'});
   delete $opts{'limit'} unless(defined $opts{'limit'});
+  delete $opts{'exclude'} unless(defined $opts{'exclude'});
 
   $opts{'read-count'} = 350_000 unless(defined $opts{'read-count'});
 
