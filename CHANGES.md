@@ -1,6 +1,6 @@
 # CHANGES
 
-## NEXT - major release
+## 1.13.0
 
 * Overlapping read support
 * Support for csi indexing of bam/cram files
