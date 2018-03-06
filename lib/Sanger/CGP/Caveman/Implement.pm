@@ -1,9 +1,9 @@
 package Sanger::CGP::Caveman::Implement;
 
 ##########LICENCE##########
-#  Copyright (c) 2014-2017 Genome Research Ltd.
+#  Copyright (c) 2014-2018 Genome Research Ltd.
 #
-#  Author: David Jones <cgpit@sanger.ac.uk>
+#  Author: CASM/Cancer IT <cgphelp@sanger.ac.uk>
 #
 #  This file is part of cgpCaVEManWrapper.
 #
@@ -28,6 +28,8 @@ use File::Which qw(which);
 use FindBin qw($Bin);
 use autodie qw(:all);
 use Const::Fast qw(const);
+use Capture::Tiny qw(capture);
+use List::Util qw(first);
 use File::Basename;
 
 use Sanger::CGP::Caveman;
@@ -45,15 +47,19 @@ const my $CAVEMAN_ESTEP_MUT_PRIOR_EXT => q{ -c %s};
 const my $CAVEMAN_ESTEP_SNP_PRIOR_EXT => q{ -d %s};
 const my $CAVEMAN_ESTEP_NPLATFORM_EXT => q{ -P %s};
 const my $CAVEMAN_ESTEP_TPLATFORM_EXT => q{ -T %s};
-const my $CAVEMAN_FLAG => q{ -i %s -o %s -s %s -m %s -n %s -b %s -g %s -umv %s -ref %s -t %s};
+const my $CAVEMAN_FLAG => q{ -i %s -o %s -s %s -m %s -n %s -b %s -g %s -umv %s -ref %s -t %s -sa %s};
 const my $MERGE_CAVEMAN_RESULTS => q{ mergeCavemanResults -s %s -o %s -f %s};
 const my $CAVEMAN_VCF_IDS => q{ -i %s -o %s};
 const my $CAVEMAN_MUT_PROB_CUTOFF => q{ -p %f};
 const my $CAVEMAN_SNP_PROB_CUTOFF => q{ -q %f};
 const my $CAVEMAN_DEBUG_MODE => q{ -s};
+const my $CAVEMAN_VCF_SPLIT => q{ -i %s -o %s -s -l %d};
+const my $CAVEMAN_VCF_FLAGGED_CONCAT => q{vcf-concat %s | vcf-sort > %s};
+const my $FILE_COUNT => q{ls -1 %s | wc -l};
 
 const my $FLAG_SCRIPT => q{cgpFlagCaVEMan.pl};
 const my $IDS_SCRIPT => q{cgpAppendIdsToVcf.pl};
+const my $VCF_SPLIT_SCRIPT => q{cgpVCFSplit.pl};
 
 sub prepare {
   my $options = shift;
@@ -125,13 +131,17 @@ sub caveman_split {
 	return 1 if PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'), $index);
 
 	my $command = _which('caveman') || die "Unable to find 'caveman' in path";
-	$command .= sprintf($CAVEMAN_SPLIT,$index,$config,$options->{'read-count'});
+
+	$command .= sprintf($CAVEMAN_SPLIT,
+                      $options->{'valid_fai_idx'}->[$index-1], # only process the contigs we care about
+                      $config,
+                      $options->{'read-count'});
 
 	PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $command, $index);
   	return PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), $index);
 }
 
-sub caveman_merge{
+sub caveman_merge {
 	# uncoverable subroutine
 	my $options = shift;
 
@@ -149,7 +159,7 @@ sub caveman_merge{
 	return PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), 0);
 }
 
-sub caveman_mstep{
+sub caveman_mstep {
 	# uncoverable subroutine
 	my ($index_in,$options) = @_;
 
@@ -174,7 +184,7 @@ sub caveman_mstep{
   return 1;
 }
 
-sub caveman_estep{
+sub caveman_estep {
 	# uncoverable subroutine
 	my ($index_in,$options) = @_;
 
@@ -265,15 +275,19 @@ sub caveman_merge_results {
 								unless (PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'), 'merge_snps', 0));
 	PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), 'merge_snps', 0);
 
-	$command = sprintf($MERGE_CAVEMAN_RESULTS,$splitList,$out.".no_analysis.bed",$options->{'noanalysisbed'});
-	PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $command, 0)
-								unless (PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'), 'merge_no_analysis', 0));
+  unless (PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'), 'merge_no_analysis', 0)) {
+  	$command = sprintf($MERGE_CAVEMAN_RESULTS,$splitList,$out.".no_analysis.bed",$options->{'noanalysisbed'});
+  	PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $command, 0);
+    extend_no_analysis($options, $out.'.no_analysis.bed');
+  }
+
+
 	PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), 'merge_no_analysis', 0);
 
 	return 1;
 }
 
-sub caveman_add_vcf_ids{
+sub caveman_add_vcf_ids {
 	# uncoverable subroutine
 	my ($options, $snps_or_muts) = @_;
 	my $tmp = $options->{'tmp'};
@@ -291,39 +305,104 @@ sub caveman_add_vcf_ids{
 	return PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), $snps_or_muts);
 }
 
-sub caveman_flag{
-	# uncoverable subroutine
+sub caveman_split_vcf {
+  # uncoverable subroutine
 	my $options = shift;
+  my $tmp = $options->{'tmp'};
+  my $infile = $options->{'for_split'};
+  my $outstub = $options->{'split_out'};
+  my $split_lines = $options->{'split_lines'};
+
+  return 1 if PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'),0);
+
+  my $script = _which($VCF_SPLIT_SCRIPT) ||  die "Unable to find '$VCF_SPLIT_SCRIPT' in path";
+	my $command = $^X.' '.$script;
+	$command .= sprintf($CAVEMAN_VCF_SPLIT,
+														$infile,
+														$outstub,
+                            $split_lines);
+  PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $command, 0);
+	return PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), 0);
+}
+
+sub count_files {
+  # uncoverable subroutine
+	my ($options,$match) = @_;
+  my $tmp = $options->{'tmp'};
+  my $command = sprintf($FILE_COUNT,$match);
+  my ($stdout, $stderr, $exit) = capture {
+    system($command);
+  };
+  die "ERROR: ($stderr) Encountered counting split files for flagging. Searching $match" unless($exit==0);
+  chomp($stdout);
+  $stdout =~ s/\s+//g;
+  return $stdout;
+}
+
+sub caveman_flag {
+  # uncoverable subroutine
+  my ($index_in,$options) = @_;
+
+  # first handle the easy bit, skip if limit not set
+  return 1 if(exists $options->{'index'} && $index_in != $options->{'index'});
+
+  my @indicies = limited_flag_indicies($options, $index_in);
+
 	my $tmp = $options->{'tmp'};
-	my $for_flagging = $options->{'for_flagging'};
-	my $flagged = $options->{'flagged'};
 	my $tumbam = $options->{'tumbam'};
 	my $normbam = $options->{'normbam'};
 	my $ref = $options->{'reference'};
 
-	return 1 if PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'), 0);
-	my $script = _which($FLAG_SCRIPT) || die "Unable to find '$FLAG_SCRIPT' in path";
-	my $flag = $^X.' '.$script;
-	$flag .= sprintf($CAVEMAN_FLAG,
-            $for_flagging,
-            $flagged,
-            q{'}.$options->{'species'}.q{'},
-            $tumbam,
-            $normbam,
-            $options->{'flag-bed'},
-            $options->{'germindel'},
-            $options->{'unmatchedvcf'},
-            $ref,
-            $options->{'seqType'}
-            );
+  for my $index(@indicies) {
+    next if PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'), $index);
+    my $script = _which($FLAG_SCRIPT) || die "Unable to find '$FLAG_SCRIPT' in path";
+  	my $flag = $^X.' '.$script;
+  	$flag .= sprintf($CAVEMAN_FLAG,
+              $options->{'split_out'}.".$index",
+              $options->{'flagged'}.".$index",
+              q{'}.$options->{'species'}.q{'},
+              $tumbam,
+              $normbam,
+              $options->{'flag-bed'},
+              $options->{'germindel'},
+              $options->{'unmatchedvcf'},
+              $ref,
+              $options->{'seqType'},
+              $options->{'species-assembly'}
+              );
 
-	$flag .= ' -c '.$options->{'flagConfig'} if(defined $options->{'flagConfig'});
-	$flag .= ' -v '.$options->{'flagToVcfConfig'} if(defined $options->{'flagToVcfConfig'});
-	$flag .= ' -p '.$options->{'apid'} if(defined $options->{'apid'});
-	if($options->{'seqType'} eq 'WXS' || $options->{'seqType'} eq 'pulldown') {
-	  die "ERROR: Pulldown/WXS flagging requires annotation BED files" unless(defined $options->{'annot-bed'});
-	  $flag .= ' -ab '.$options->{'annot-bed'};	}
+    $flag .= ' -c '.$options->{'flagConfig'} if(defined $options->{'flagConfig'});
+  	$flag .= ' -v '.$options->{'flagToVcfConfig'} if(defined $options->{'flagToVcfConfig'});
+  	$flag .= ' -p '.$options->{'apid'} if(defined $options->{'apid'});
+    $flag .= ' -ab '.$options->{'annot-bed'} if(defined $options->{'annot-bed'});
 
+    PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $flag, $index);
+    PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), $index);
+
+  }
+
+  return 1;
+}
+
+sub concat_flagged {
+  # uncoverable subroutine
+	my $options = shift;
+	my $tmp = $options->{'tmp'};
+
+  return 1 if PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'),0);
+  my $command = sprintf($CAVEMAN_VCF_FLAGGED_CONCAT,
+                  $options->{'flagged'}.".*",
+                  $options->{'flagged'});
+
+  PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), $command, 0);
+  return PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), 0);
+}
+
+sub zip_flagged{
+  # uncoverable subroutine
+	my $options = shift;
+	my $tmp = $options->{'tmp'};
+  my $flagged = $options->{'flagged'};
   my $vcf_gz = $flagged.'.gz';
   my $bgzip = _which('bgzip');
   $bgzip .= sprintf ' -c %s > %s', $flagged, $vcf_gz;
@@ -331,8 +410,7 @@ sub caveman_flag{
   my $tabix = _which('tabix');
   $tabix .= sprintf ' -p vcf %s', $vcf_gz;
 
-
-  my @commands = ($flag, $bgzip, $tabix);
+  my @commands = ($bgzip, $tabix);
 
 	PCAP::Threaded::external_process_handler(File::Spec->catdir($tmp, 'logs'), \@commands, 0);
 	return PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), 0);
@@ -404,6 +482,52 @@ sub concat {
 
 	return PCAP::Threaded::touch_success(File::Spec->catdir($tmp, 'progress'), 0);
 
+}
+
+sub load_exclude {
+  my $options = shift;
+  my @exclude_patt;
+  if(exists $options->{'exclude'}) {
+    my @exclude = split /,/, $options->{'exclude'};
+    for my $ex(@exclude) {
+      $ex =~ s/%/.+/;
+      push @exclude_patt, $ex;
+    }
+  }
+  return @exclude_patt;
+}
+
+sub valid_seq_indexes {
+  my $options = shift;
+
+  my @exclude_patt = load_exclude($options);
+
+  my @good_sq_idx;
+  open my $FAI_IN, '<', $options->{'reference'};
+  while(<$FAI_IN>) {
+    my $sq = (split /\t/, $_)[0];
+    # if doesn't match keep
+    push @good_sq_idx, $. unless(first { $sq =~ m/^$_$/ } @exclude_patt);
+  }
+  close $FAI_IN;
+
+  return \@good_sq_idx;
+}
+
+sub extend_no_analysis {
+  my ($options, $no_analysis) = @_;
+  my @exclude_patt = load_exclude($options);
+  return if(@exclude_patt == 0);
+
+  open my $na_fh, '>>', $no_analysis;
+  open my $FAI_IN, '<', $options->{'reference'};
+  while(<$FAI_IN>) {
+    my ($sq, $len) = (split /\t/, $_)[0..1];
+    # if matches then print
+    printf $na_fh "%s\t0\t%d\n", $sq, $len if(first { $sq =~ m/^$_$/ } @exclude_patt);
+  }
+  close $FAI_IN;
+  close $na_fh
 }
 
 sub valid_index{
