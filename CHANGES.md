@@ -1,5 +1,9 @@
 # CHANGES
 
+## 1.13.3
+
+* Build with CaVEMan [1.13.2](https://github.com/cancerit/CaVEMan/releases/tag/1.13.2)
+
 ## 1.13.1
 
 * Build with CaVEMan [1.13.1](https://github.com/cancerit/CaVEMan/releases/tag/1.13.1)
