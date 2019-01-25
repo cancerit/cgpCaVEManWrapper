@@ -21,7 +21,7 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 ##########LICENCE##########
 
-CAVEMAN_CORE="https://github.com/cancerit/CaVEMan/archive/1.13.9.tar.gz"
+CAVEMAN_CORE="https://github.com/cancerit/CaVEMan/archive/1.13.10.tar.gz"
 
 get_distro () {
   if hash curl 2>/dev/null; then

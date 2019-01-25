@@ -1,5 +1,19 @@
 # CHANGES
 
+## 1.13.6
+
+* Build with CaVEMan [1.13.10](https://github.com/cancerit/CaVEMan/releases/tag/1.13.10)
+* **See CaVEMan changes below**
+
+### Behaviour change
+
+**Where the proper pair filter flag is used, this code now checks that the paired-end orientation is also used.**
+**This will mean that mate-pair orientation (F/F or R/R) will be rejected**
+**If you wish to use mate-pair data, please use previous version**
+
+* Where a proper pair filter is used, now check for the correct paired-end orientation of F/R.
+* If this is not met the read is ignored.
+
 ## 1.13.5
 
 * Build with CaVEMan [1.13.9](https://github.com/cancerit/CaVEMan/releases/tag/1.13.9)
