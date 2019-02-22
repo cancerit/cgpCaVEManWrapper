@@ -17,6 +17,7 @@ addons:
       - unzip # kentools/pcap
       - libcurl4-openssl-dev # many
       - libdb-dev
+      - libgd-dev
 
 install: true
 
