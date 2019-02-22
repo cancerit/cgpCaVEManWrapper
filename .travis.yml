@@ -16,6 +16,8 @@ addons:
       - libncurses5-dev # samtools
       - unzip # kentools/pcap
       - libcurl4-openssl-dev # many
+      - libdb-dev
+      - libgd-dev
 
 install: true
 
