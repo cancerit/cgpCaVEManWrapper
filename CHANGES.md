@@ -1,5 +1,9 @@
 # CHANGES
 
+## 1.13.9
+
+* Build with CaVEMan [1.13.12](https://github.com/cancerit/CaVEMan/releases/tag/1.13.12)
+
 ## 1.13.8
 
 * Added libdb-dev and libgd-dev to travis.yml
