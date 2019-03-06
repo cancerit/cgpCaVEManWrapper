@@ -34,7 +34,7 @@ use autodie qw(:all);
 
 use File::Path qw(remove_tree make_path);
 use File::Spec;
-use Getopt::Long;
+use Getopt::Long qw(:config no_ignore_case);
 use Pod::Usage qw(pod2usage);
 use List::Util qw(first);
 use Const::Fast qw(const);
