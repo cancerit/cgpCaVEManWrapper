@@ -1,5 +1,9 @@
 # CHANGES
 
+## 1.13.10
+
+* Fix command line parsing of short option names, np/NP and tp/TP only ever set uppercase versions.
+
 ## 1.13.9
 
 * Build with CaVEMan [1.13.12](https://github.com/cancerit/CaVEMan/releases/tag/1.13.12)
