@@ -66,7 +66,7 @@ const my $NO_ANALYSIS => q{%s.no_analysis.bed};
 const my $SP_ASS_MESSAGE => qq{%s defined at commandline (%s) does not match that in the BAM file (%s). Defaulting to BAM file value.\n};
 const my $SPLIT_LINE_COUNT => 1000;
 
-const my @VALID_PROTOCOLS => qw(WGS WXS RNA);
+const my @VALID_PROTOCOLS => qw(WGS WXS RNA AMPLICON TARGETED RNA-Seq);
 const my @PERMITTED_SEQ_TYPES => qw(pulldown|exome|genome|genomic|followup|targeted|rna_seq);
 const my $DEFAULT_PROTOCOL => 'WGS';
 
