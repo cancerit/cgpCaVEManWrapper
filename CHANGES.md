@@ -1,5 +1,12 @@
 # CHANGES
 
+## 1.13.11
+
+* Add AMPLICON and TARGETED to accepted protocol list. Change RNA-seq, but also keep RNA.
+* https://www.ebi.ac.uk/ena/submit/reads-library-strategy
+* In line with Update of CaVEMan:
+* Build with CaVEMan [1.13.13](https://github.com/cancerit/CaVEMan/releases/tag/1.13.13) 
+
 ## 1.13.10
 
 * Fix command line parsing of short option names, np/NP and tp/TP only ever set uppercase versions.
