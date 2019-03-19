@@ -530,8 +530,8 @@ caveman.pl [options]
     -threads                -t      Number of threads allowed on this machine (default 1)
     -limit                  -l      Limit the number of jobs required for m/estep (default undef)
     -logs                   -g      Location to write logs (default is ./logs)
-    -normal-protocol        -np     Normal protocol [WGS|WXS|RNA] (default WGS)
-    -tumour-protocol        -tp     Tumour protocol [WGS|WXS|RNA] (default WGS)
+    -normal-protocol        -np     Normal protocol [WGS|WXS|RNA|RNA-Seq|AMPLICON|TARGETED] (default WGS)
+    -tumour-protocol        -tp     Tumour protocol [WGS|WXS|RNA|RNA-Seq|AMPLICON|TARGETED] (default WGS)
     -tum-cn-default         -td     Default tumour CN to use with gaps or no file provided
     -norm-cn-default        -nd     Default normal CN to use with gaps or no file provided
     -annot-bed-files        -ab     Annotation BED files - required for pulldown/WXS
@@ -634,10 +634,12 @@ Override default log location of outdir/logs to the given folder.
 =item B<-normal-protocol>
 
 Override default of WGS for the normal sample protocol entry.
+[WGS|WXS|RNA|RNA-Seq|AMPLICON|TARGETED] (default WGS)
 
 =item B<-tumour-protocol>
 
 Override default of WGS for the tumour sample protocol entry.
+[WGS|WXS|RNA|RNA-Seq|AMPLICON|TARGETED] (default WGS)
 
 =item B<-process>
 
