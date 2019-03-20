@@ -1,5 +1,9 @@
 # CHANGES
 
+## 1.13.12
+
+* Minor errors in CaVEMan 1.13.13 force update.
+
 ## 1.13.11
 
 * Add AMPLICON and TARGETED to accepted protocol list. Change RNA-seq, but also keep RNA.
