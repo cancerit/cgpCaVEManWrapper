@@ -1,5 +1,9 @@
 # CHANGES
 
+## 1.13.13
+
+* Build with CaVEMan [1.13.15](https://github.com/cancerit/CaVEMan/releases/tag/1.13.15) 
+
 ## 1.13.12
 
 * Minor errors in CaVEMan 1.13.13 force update.
