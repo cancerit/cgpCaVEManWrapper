@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 
 ##########LICENCE##########
-#  Copyright (c) 2014-2018 Genome Research Ltd.
+#  Copyright (c) 2014-2019 Genome Research Ltd.
 #
 #  Author: CASM/Cancer IT <cgphelp@sanger.ac.uk>
 #
@@ -191,13 +191,15 @@ my %index_max = ( 'setup' => 1,
     Sanger::CGP::Caveman::Implement::zip_flagged($options);
 	}
 
-	if((!exists $options->{'process'}) #We aren't specifying steps
-	    || ($options->{'process'} eq 'flag') #We've flagged so we are done anyway
-	    || ($options->{'noflag'} == 1 && $options->{'process'} eq 'add_ids')){ #No flagging wanted and preflagging step done
-	  #finally cleanup after ourselves by removing the temporary output folder, split files etc.
-	  #Zip the snps files with IDs
-	  Sanger::CGP::Caveman::Implement::pre_cleanup_zip($options);
-    cleanup($options);
+  if($options->{'noclean'} == 0) {
+    if((!exists $options->{'process'}) #We aren't specifying steps
+        || ($options->{'process'} eq 'flag') #We've flagged so we are done anyway
+        || ($options->{'noflag'} == 1 && $options->{'process'} eq 'add_ids')){ #No flagging wanted and preflagging step done
+      #finally cleanup after ourselves by removing the temporary output folder, split files etc.
+      #Zip the snps files with IDs
+      Sanger::CGP::Caveman::Implement::pre_cleanup_zip($options);
+      cleanup($options);
+    }
   }
 
 }
@@ -306,6 +308,7 @@ sub setup {
 					'TP|tumour-platform=s' => \$opts{'nplat'},
 					'st|seqType=s' => \$opts{'seqType'},
 					'noflag|no-flagging' => \$opts{'noflag'},
+          'noclean' => \$opts{'noclean'},
 					'mpc|mut_probability_cutoff=f' => \$opts{'mpc'},
 					'spc|snp_probability_cutoff=f' => \$opts{'spc'},
           'e|read-count=i' => \$opts{'read-count'},
@@ -326,6 +329,7 @@ sub setup {
   pod2usage(-msg  => "\nERROR: Options must be defined.\n", -verbose => 2,  -output => \*STDERR) unless($defined);
 
   $opts{'noflag'} = 0 unless(defined $opts{'noflag'});
+  $opts{'noclean'} = 0 unless(defined $opts{'noclean'});
 
   #Check all files and dirs are readable and exist.
   PCAP::Cli::file_for_reading('reference',$opts{'reference'});
@@ -541,6 +545,7 @@ caveman.pl [options]
     -normal-platform        -NP     Normal platform to override bam value
     -tumour-platform        -TP     Tumour platform to override bam value
     -no-flagging            -noflag Do not flag, instead cleanup at the end of the merged results after estep.
+    -noclean                        Do not cleanup, use in conjunction with -noflag to allow flagging later.
     -mut_probability_cutoff -mpc    Minimum total somatic genotype probability for output
     -snp_probability_cutoff -spc    Minimum total germline genotype probability for output
     -read-count             -e      Modify the split size (caveman split) [350,000]
@@ -668,6 +673,12 @@ Tumour platform to override bam value
 =item B<-no-flagging>
 
 Don't flag the data, just cleanup after merging results
+
+=item B<-noclean>
+
+Leaves the workspace in processing state.  Intended for use with '-no-flagging'
+to allow resumption with multi thread flagging once dependent files are in place.
+For example run as `-no-flagging -noclean` and subsequently run `-p flag`.
 
 =item B<-read-count>
 
