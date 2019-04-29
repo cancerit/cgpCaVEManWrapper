@@ -1,7 +1,7 @@
 package Sanger::CGP::Caveman;
 
 ##########LICENCE##########
-#  Copyright (c) 2014-2018 Genome Research Ltd.
+#  Copyright (c) 2014-2019 Genome Research Ltd.
 #
 #  Author: CASM/Cancer IT <cgphelp@sanger.ac.uk>
 #
@@ -26,6 +26,6 @@ package Sanger::CGP::Caveman;
 use strict;
 use Const::Fast qw(const);
 
-our $VERSION = '1.13.13';
+our $VERSION = '1.13.14';
 
 1;
