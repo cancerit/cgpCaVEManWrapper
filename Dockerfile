@@ -17,7 +17,6 @@ g++ \
 make \
 gcc \
 pkg-config \
-python \
 zlib1g-dev
 
 RUN locale-gen en_US.UTF-8
