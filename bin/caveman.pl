@@ -63,7 +63,7 @@ const my $IDS_SNPS_TBI => q{%s.snps.ids.vcf.gz.tbi};
 const my $IDS_MUTS_GZ => q{%s.muts.ids.vcf.gz};
 const my $IDS_MUTS_TBI => q{%s.muts.ids.vcf.gz.tbi};
 const my $NO_ANALYSIS => q{%s.no_analysis.bed};
-const my $SP_ASS_MESSAGE => qq{%s defined at commandline (%s) does not match that in the BAM file (%s). Defaulting to BAM file value.\n};
+const my $SP_ASS_MESSAGE => qq{%s defined at commandline (%s) does not match that in the BAM file (%s).\n};
 const my $SPLIT_LINE_COUNT => 1000;
 
 const my @VALID_PROTOCOLS => qw(WGS WXS RNA AMPLICON TARGETED RNA-Seq);
@@ -254,13 +254,13 @@ sub getSpeciesAssemblyFromBam{
         my $assembly = $1;
         warn sprintf $SP_ASS_MESSAGE, 'Assembly', $opts->{'species-assembly'}, $assembly
           if(defined $opts->{'species-assembly'} && $opts->{'species-assembly'} ne $assembly);
-        $opts->{'species-assembly'} = $assembly;
+        $opts->{'species-assembly'} = $assembly if ( not defined $opts->{'species-assembly'} ) ;
       }
       if($line =~ /SP:([^\t]+)/) {
         my $species = $1;
         warn sprintf $SP_ASS_MESSAGE, 'Species', $opts->{'species'}, $species
           if(defined $opts->{'species'} && $opts->{'species'} ne $species);
-        $opts->{'species'} = $species;
+        $opts->{'species'} = $species if ( not defined $opts->{'species'};
       }
       last;
     }
