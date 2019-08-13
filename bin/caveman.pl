@@ -71,85 +71,85 @@ const my @PERMITTED_SEQ_TYPES => qw(pulldown|exome|genome|genomic|followup|targe
 const my $DEFAULT_PROTOCOL => 'WGS';
 
 my %index_max = ( 'setup' => 1,
-									'split' => -1,
-									'split_concat' => 1,
-									'mstep' => -1,
-									'merge' => 1,
-									'estep' => -1,
-									'merge_results' => 1,
-									'add_ids' => 1,
-									'flag' => 1);
+         'split' => -1,
+         'split_concat' => 1,
+         'mstep' => -1,
+         'merge' => 1,
+         'estep' => -1,
+         'merge_results' => 1,
+         'add_ids' => 1,
+         'flag' => 1);
 
 {
-	my $options = setup();
-	Sanger::CGP::Caveman::Implement::prepare($options);
+  my $options = setup();
+  Sanger::CGP::Caveman::Implement::prepare($options);
 
-	my $threads = PCAP::Threaded->new($options->{'threads'});
-	&PCAP::Threaded::disable_out_err if(exists $options->{'index'});
+  my $threads = PCAP::Threaded->new($options->{'threads'});
+  &PCAP::Threaded::disable_out_err if(exists $options->{'index'});
 
   # register processes
-	$threads->add_function('caveman_split', \&Sanger::CGP::Caveman::Implement::caveman_split);
-	$threads->add_function('caveman_mstep', \&Sanger::CGP::Caveman::Implement::caveman_mstep);
+  $threads->add_function('caveman_split', \&Sanger::CGP::Caveman::Implement::caveman_split);
+  $threads->add_function('caveman_mstep', \&Sanger::CGP::Caveman::Implement::caveman_mstep);
   $threads->add_function('caveman_estep', \&Sanger::CGP::Caveman::Implement::caveman_estep);
   $threads->add_function('caveman_flag', \&Sanger::CGP::Caveman::Implement::caveman_flag);
 
   # this is here just to make the reference usable if not the same samtools version
   my $ref = $options->{'reference'};
-	if($ref =~ m/\.gz.fai$/) {
-	  my $tmp_ref = $options->{'tmp'}."/genome.fa";
-	  unless(-e $tmp_ref) {
-	    $ref =~ s/\.fai$//;
-	    system([0,2], "gunzip -c $ref > $tmp_ref");
-	    copy $options->{'reference'}, "$tmp_ref.fai"; # there's no difference when decompressed.
-	  }
-	  $options->{'reference'} = "$tmp_ref.fai";
-	}
+  if($ref =~ m/\.gz.fai$/) {
+    my $tmp_ref = $options->{'tmp'}."/genome.fa";
+    unless(-e $tmp_ref) {
+      $ref =~ s/\.fai$//;
+      system([0,2], "gunzip -c $ref > $tmp_ref");
+      copy $options->{'reference'}, "$tmp_ref.fai"; # there's no difference when decompressed.
+    }
+    $options->{'reference'} = "$tmp_ref.fai";
+  }
 
 
-	#Start processes in correct order, according to process (DEFAULT is caveman)
+ #Start processes in correct order, according to process (DEFAULT is caveman)
 
-	#caveman process flow
-	#Setup
-	Sanger::CGP::Caveman::Implement::caveman_setup($options) if(!exists $options->{'process'} || $options->{'process'} eq 'setup');
-	#Split
-	#count the number of chromosomes/contigs in the fasta index
+  #caveman process flow
+  #Setup
+  Sanger::CGP::Caveman::Implement::caveman_setup($options) if(!exists $options->{'process'} || $options->{'process'} eq 'setup');
+  #Split
+  #count the number of chromosomes/contigs in the fasta index
 
-	if(!exists $options->{'process'} || $options->{'process'} eq 'split'){
-		$options->{'out_file'} = $options->{'splitList'};
+  if(!exists $options->{'process'} || $options->{'process'} eq 'split'){
+    $options->{'out_file'} = $options->{'splitList'};
     my $valid_fai_idx = Sanger::CGP::Caveman::Implement::valid_seq_indexes($options);
-		my $contig_count = scalar @{$valid_fai_idx};
+    my $contig_count = scalar @{$valid_fai_idx};
     $options->{'valid_fai_idx'} = $valid_fai_idx;
     #= Sanger::CGP::Caveman::Implement::file_line_count($options->{'reference'});
-		$threads->run($contig_count, 'caveman_split', $options);
+    $threads->run($contig_count, 'caveman_split', $options);
     delete $options->{'valid_fai_idx'};
-	}
+  }
 
   if(!exists $options->{'process'} || $options->{'process'} eq 'split_concat'){
     $options->{'out_file'} = $options->{'splitList'};
     $options->{'target_files'} = $options->{'splitList'}.".*";
-	  Sanger::CGP::Caveman::Implement::concat($options);
-	}
+    Sanger::CGP::Caveman::Implement::concat($options);
+  }
 
-	my $split_count = Sanger::CGP::Caveman::Implement::file_line_count($options->{'splitList'}) if(!exists $options->{'process'} || first { $options->{'process'} eq $_ } ('mstep', 'estep'));
-	$split_count = $options->{'limit'} if(exists $options->{'limit'} && defined $options->{'limit'});
-	#Split & concatenate has succeeded in running, so now count the number of split files.
-	if(!exists $options->{'process'} || $options->{'process'} eq 'mstep'){
-		#Run the mstep with number of split jobs.
-		$threads->run($split_count, 'caveman_mstep', $options);
-	}
+  my $split_count = Sanger::CGP::Caveman::Implement::file_line_count($options->{'splitList'}) if(!exists $options->{'process'} || first { $options->{'process'} eq $_ } ('mstep', 'estep'));
+  $split_count = $options->{'limit'} if(exists $options->{'limit'} && defined $options->{'limit'});
+  #Split & concatenate has succeeded in running, so now count the number of split files.
+  if(!exists $options->{'process'} || $options->{'process'} eq 'mstep'){
+    #Run the mstep with number of split jobs.
+    $threads->run($split_count, 'caveman_mstep', $options);
+  }
 
-	#Run the merge step
-	Sanger::CGP::Caveman::Implement::caveman_merge($options) if(!exists $options->{'process'} || $options->{'process'} eq 'merge');
+  #Run the merge step
+  Sanger::CGP::Caveman::Implement::caveman_merge($options) if(!exists $options->{'process'} || $options->{'process'} eq 'merge');
 
-	#Run the estep
-	if(!exists $options->{'process'} || $options->{'process'} eq 'estep'){
-		$threads->run($split_count, 'caveman_estep', $options);
-	}
+  #Run the estep
+  if(!exists $options->{'process'} || $options->{'process'} eq 'estep'){
+    $threads->run($split_count, 'caveman_estep', $options);
+  }
 
-	#Now we have all the results... merge all the split results files into one for each type.
-	$options->{'out_file'} = File::Spec->catfile($options->{'tmp'},$options->{'tumour_name'}."_vs_".$options->{'normal_name'});
-	if(!exists $options->{'process'} || $options->{'process'} eq 'merge_results'){
-		Sanger::CGP::Caveman::Implement::caveman_merge_results($options);
+  #Now we have all the results... merge all the split results files into one for each type.
+  $options->{'out_file'} = File::Spec->catfile($options->{'tmp'},$options->{'tumour_name'}."_vs_".$options->{'normal_name'});
+  if(!exists $options->{'process'} || $options->{'process'} eq 'merge_results'){
+    Sanger::CGP::Caveman::Implement::caveman_merge_results($options);
   }
 
   # these values are used in multiple blocks
@@ -159,21 +159,21 @@ my %index_max = ( 'setup' => 1,
   $options->{'ids_snps_file'} = sprintf($IDS_SNPS,$options->{'out_file'});
 
   #Add ids to the VCF files
-	if(!exists $options->{'process'} || $options->{'process'} eq 'add_ids'){
-		#Muts
-		$options->{'raw_file'} = $options->{'raw_muts_file'};
-		$options->{'ids_file'} = $options->{'ids_muts_file'};
-		Sanger::CGP::Caveman::Implement::caveman_add_vcf_ids($options, 'muts');
-		#Snps
-		$options->{'raw_file'} = $options->{'raw_snps_file'};
-		$options->{'ids_file'} = $options->{'ids_snps_file'};
-		Sanger::CGP::Caveman::Implement::caveman_add_vcf_ids($options, 'snps');
-	}
+  if(!exists $options->{'process'} || $options->{'process'} eq 'add_ids'){
+    #Muts
+    $options->{'raw_file'} = $options->{'raw_muts_file'};
+    $options->{'ids_file'} = $options->{'ids_muts_file'};
+    Sanger::CGP::Caveman::Implement::caveman_add_vcf_ids($options, 'muts');
+    #Snps
+    $options->{'raw_file'} = $options->{'raw_snps_file'};
+    $options->{'ids_file'} = $options->{'ids_snps_file'};
+    Sanger::CGP::Caveman::Implement::caveman_add_vcf_ids($options, 'snps');
+  }
 
   #Flag the results.
-	if((!exists $options->{'process'} || $options->{'process'} eq 'flag')
+  if((!exists $options->{'process'} || $options->{'process'} eq 'flag')
         && (!defined $options->{'noflag'} || $options->{'noflag'} != 1)){
-		$options->{'for_flagging'} = $options->{'ids_muts_file'};
+    $options->{'for_flagging'} = $options->{'ids_muts_file'};
     $options->{'for_split'} = $options->{'ids_muts_file'};
     $options->{'split_out'} = $options->{'ids_muts_file'}.'split';
     $options->{'split_lines'} = $SPLIT_LINE_COUNT;
@@ -189,59 +189,58 @@ my %index_max = ( 'setup' => 1,
     Sanger::CGP::Caveman::Implement::concat_flagged($options);
     #Gzip and index output flagged file
     Sanger::CGP::Caveman::Implement::zip_flagged($options);
-	}
+  }
 
   if($options->{'noclean'} == 0) {
     if((!exists $options->{'process'}) #We aren't specifying steps
-        || ($options->{'process'} eq 'flag') #We've flagged so we are done anyway
-        || ($options->{'noflag'} == 1 && $options->{'process'} eq 'add_ids')){ #No flagging wanted and preflagging step done
+       || ($options->{'process'} eq 'flag') #We've flagged so we are done anyway
+       || ($options->{'noflag'} == 1 && $options->{'process'} eq 'add_ids')){ #No flagging wanted and preflagging step done
       #finally cleanup after ourselves by removing the temporary output folder, split files etc.
       #Zip the snps files with IDs
       Sanger::CGP::Caveman::Implement::pre_cleanup_zip($options);
       cleanup($options);
     }
   }
-
 }
 
 sub cleanup{
-	my $options = shift;
-	my $final_loc = File::Spec->catfile($options->{'outdir'},$options->{'tumour_name'}."_vs_".$options->{'normal_name'});
-  #Move cov array, prob array, alg bean, config, splitList
+  my $options = shift;
+  my $final_loc = File::Spec->catfile($options->{'outdir'},$options->{'tumour_name'}."_vs_".$options->{'normal_name'});
+   #Move cov array, prob array, alg bean, config, splitList
   move ($options->{'cave_cfg'},File::Spec->catfile($options->{'outdir'},$CAVEMAN_CONFIG))
-      || die "Error trying to move config file '$options->{cave_cfg}' -> '".File::Spec->catfile($options->{'outdir'},$CAVEMAN_CONFIG)."': $!";
+       || die "Error trying to move config file '$options->{cave_cfg}' -> '".File::Spec->catfile($options->{'outdir'},$CAVEMAN_CONFIG)."': $!";
   move ($options->{'cave_alg'},File::Spec->catfile($options->{'outdir'},$CAVEMAN_ALG_BEAN))
-      || die "Error trying to move alg_bean '$options->{cave_alg}' -> '".File::Spec->catfile($options->{'outdir'},$CAVEMAN_ALG_BEAN)."': $!";
+       || die "Error trying to move alg_bean '$options->{cave_alg}' -> '".File::Spec->catfile($options->{'outdir'},$CAVEMAN_ALG_BEAN)."': $!";
   move ($options->{'cave_parr'},File::Spec->catfile($options->{'outdir'},$CAVEMAN_PROB_ARR))
-      || die "Error trying to move prob_array '$options->{cave_parr}' -> '".File::Spec->catfile($options->{'outdir'},$CAVEMAN_PROB_ARR)."': $!";
+       || die "Error trying to move prob_array '$options->{cave_parr}' -> '".File::Spec->catfile($options->{'outdir'},$CAVEMAN_PROB_ARR)."': $!";
   move ($options->{'cave_carr'},File::Spec->catfile($options->{'outdir'},$CAVEMAN_COV_ARR))
-      || die "Error trying to move cov_array '$options->{cave_carr}' -> '".File::Spec->catfile($options->{'outdir'},$CAVEMAN_COV_ARR)."': $!";
+       || die "Error trying to move cov_array '$options->{cave_carr}' -> '".File::Spec->catfile($options->{'outdir'},$CAVEMAN_COV_ARR)."': $!";
   move ($options->{'splitList'},File::Spec->catfile($options->{'outdir'},'splitList'))
-      || die "Error trying to move splitList '$options->{splitList}' -> '".File::Spec->catfile($options->{'outdir'},'splitList')."': $!";
- 	move (sprintf($NO_ANALYSIS,$options->{'out_file'}),sprintf($NO_ANALYSIS,$final_loc))
- 			|| die "Error trying to move no analysis file '".sprintf($NO_ANALYSIS,$options->{'out_file'})."' -> '".sprintf($NO_ANALYSIS,$final_loc)."': $!";
+       || die "Error trying to move splitList '$options->{splitList}' -> '".File::Spec->catfile($options->{'outdir'},'splitList')."': $!";
+  move (sprintf($NO_ANALYSIS,$options->{'out_file'}),sprintf($NO_ANALYSIS,$final_loc))
+       || die "Error trying to move no analysis file '".sprintf($NO_ANALYSIS,$options->{'out_file'})."' -> '".sprintf($NO_ANALYSIS,$final_loc)."': $!";
 
   move (sprintf($IDS_MUTS_GZ,$options->{'out_file'}),sprintf($IDS_MUTS_GZ,$final_loc))
- 			|| die "Error trying to move raw SNPs file '".sprintf($IDS_MUTS_GZ,$options->{'out_file'})."' -> '".sprintf($IDS_MUTS_GZ,$final_loc)."': $!";
-	move (sprintf($IDS_MUTS_TBI,$options->{'out_file'}),sprintf($IDS_MUTS_TBI,$final_loc))
- 			|| die "Error trying to move raw SNPs file '".sprintf($IDS_MUTS_TBI,$options->{'out_file'})."' -> '".sprintf($IDS_MUTS_TBI,$final_loc)."': $!";
+       || die "Error trying to move raw SNPs file '".sprintf($IDS_MUTS_GZ,$options->{'out_file'})."' -> '".sprintf($IDS_MUTS_GZ,$final_loc)."': $!";
+  move (sprintf($IDS_MUTS_TBI,$options->{'out_file'}),sprintf($IDS_MUTS_TBI,$final_loc))
+       || die "Error trying to move raw SNPs file '".sprintf($IDS_MUTS_TBI,$options->{'out_file'})."' -> '".sprintf($IDS_MUTS_TBI,$final_loc)."': $!";
 
-	move (sprintf($IDS_SNPS_GZ,$options->{'out_file'}),sprintf($IDS_SNPS_GZ,$final_loc))
- 			|| die "Error trying to move raw SNPs file '".sprintf($IDS_SNPS_GZ,$options->{'out_file'})."' -> '".sprintf($IDS_SNPS_GZ,$final_loc)."': $!";
-	move (sprintf($IDS_SNPS_TBI,$options->{'out_file'}),sprintf($IDS_SNPS_TBI,$final_loc))
- 			|| die "Error trying to move raw SNPs file '".sprintf($IDS_SNPS_TBI,$options->{'out_file'})."' -> '".sprintf($IDS_SNPS_TBI,$final_loc)."': $!";
+  move (sprintf($IDS_SNPS_GZ,$options->{'out_file'}),sprintf($IDS_SNPS_GZ,$final_loc))
+       || die "Error trying to move raw SNPs file '".sprintf($IDS_SNPS_GZ,$options->{'out_file'})."' -> '".sprintf($IDS_SNPS_GZ,$final_loc)."': $!";
+  move (sprintf($IDS_SNPS_TBI,$options->{'out_file'}),sprintf($IDS_SNPS_TBI,$final_loc))
+       || die "Error trying to move raw SNPs file '".sprintf($IDS_SNPS_TBI,$options->{'out_file'})."' -> '".sprintf($IDS_SNPS_TBI,$final_loc)."': $!";
 
   if($options->{'noflag'} == 0){
-    move (sprintf($FLAGGED_MUTS_GZ,$options->{'out_file'}),sprintf($FLAGGED_MUTS_GZ,$final_loc))
-        || die "Error trying to move flagged muts file '".sprintf($FLAGGED_MUTS_GZ,$options->{'out_file'})."' -> '".sprintf($FLAGGED_MUTS_GZ,$final_loc)."': $!";
-    move (sprintf($FLAGGED_MUTS_TBI,$options->{'out_file'}),sprintf($FLAGGED_MUTS_TBI,$final_loc))
-        || die "Error trying to move flagged muts file '".sprintf($FLAGGED_MUTS_TBI,$options->{'out_file'})."' -> '".sprintf($FLAGGED_MUTS_TBI,$final_loc)."': $!";
+     move (sprintf($FLAGGED_MUTS_GZ,$options->{'out_file'}),sprintf($FLAGGED_MUTS_GZ,$final_loc))
+         || die "Error trying to move flagged muts file '".sprintf($FLAGGED_MUTS_GZ,$options->{'out_file'})."' -> '".sprintf($FLAGGED_MUTS_GZ,$final_loc)."': $!";
+     move (sprintf($FLAGGED_MUTS_TBI,$options->{'out_file'}),sprintf($FLAGGED_MUTS_TBI,$final_loc))
+         || die "Error trying to move flagged muts file '".sprintf($FLAGGED_MUTS_TBI,$options->{'out_file'})."' -> '".sprintf($FLAGGED_MUTS_TBI,$final_loc)."': $!";
   }
   move ($options->{'logs'},File::Spec->catdir($options->{'outdir'},'logs'))
       || die "Error trying to move logs directory '$options->{logs}' -> '".File::Spec->catdir($options->{'outdir'},'logs')."': $!";
 
   remove_tree ($options->{'tmp'});
-	return 0;
+  return 0;
 }
 
 sub getSpeciesAssemblyFromBam{
@@ -273,47 +272,47 @@ sub getSpeciesAssemblyFromBam{
 sub setup {
   my %opts;
   GetOptions(
-  				'h|help' => \$opts{'h'},
-					'm|man' => \$opts{'m'},
-					'v|version' => \$opts{'v'},
-					'r|reference=s' => \$opts{'reference'},
-					'o|outdir=s' => \$opts{'outdir'},
-					'tb|tumour-bam=s' => \$opts{'tumbam'},
-					'nb|normal-bam=s' => \$opts{'normbam'},
-					'ig|ignore-file=s' => \$opts{'ignore'},
-					'tc|tumour-cn=s' => \$opts{'tumcn'},
-					'nc|normal-cn=s' => \$opts{'normcn'},
-					't|threads=i' => \$opts{'threads'},
-					'k|normal-contamination=s' => \$opts{'normcont'},
-					's|species=s' => \$opts{'species'},
-					'sa|species-assembly=s' => \$opts{'species-assembly'},
-					'p|process=s' => \$opts{'process'},
-					'g|logs=s' => \$opts{'lgs'},
-					'i|index=i' => \$opts{'index'},
-					'l|limit=i' => \$opts{'limit'},
-					'b|flag-bed-files=s' => \$opts{'flag-bed'},
-					'ab|annot-bed-files=s' => \$opts{'annot-bed'},
-					'in|germline-indel=s' => \$opts{'germindel'},
-					'u|unmatched-vcf=s' => \$opts{'unmatchedvcf'},
-					'np|normal-protocol=s' => \$opts{'normprot'},
-					'tp|tumour-protocol=s' => \$opts{'tumprot'},
-					'td|tum-cn-default=i' => \$opts{'tumdefcn'},
-					'nd|norm-cn-default=i' => \$opts{'normdefcn'},
-					'c|flagConfig=s' => \$opts{'flagConfig'},
-					'f|flagToVcfConfig=s' => \$opts{'flagToVcfConfig'},
-					'pm|prior-mut-probability=f' => \$opts{'priorMut'},
-					'ps|prior-snp-probability=f' => \$opts{'priorSnp'},
-					'a|apid=i' => \$opts{'apid'},
-					'NP|normal-platform=s' => \$opts{'tplat'},
-					'TP|tumour-platform=s' => \$opts{'nplat'},
-					'st|seqType=s' => \$opts{'seqType'},
-					'noflag|no-flagging' => \$opts{'noflag'},
-          'noclean' => \$opts{'noclean'},
-					'mpc|mut_probability_cutoff=f' => \$opts{'mpc'},
-					'spc|snp_probability_cutoff=f' => \$opts{'spc'},
-          'e|read-count=i' => \$opts{'read-count'},
-          'x|exclude=s' => \$opts{'exclude'},
-					'dbg|debug' => \$opts{'debug_cave'},
+     'h|help' => \$opts{'h'},
+     'm|man' => \$opts{'m'},
+     'v|version' => \$opts{'v'},
+     'r|reference=s' => \$opts{'reference'},
+     'o|outdir=s' => \$opts{'outdir'},
+     'tb|tumour-bam=s' => \$opts{'tumbam'},
+     'nb|normal-bam=s' => \$opts{'normbam'},
+     'ig|ignore-file=s' => \$opts{'ignore'},
+     'tc|tumour-cn=s' => \$opts{'tumcn'},
+     'nc|normal-cn=s' => \$opts{'normcn'},
+     't|threads=i' => \$opts{'threads'},
+     'k|normal-contamination=s' => \$opts{'normcont'},
+     's|species=s' => \$opts{'species'},
+     'sa|species-assembly=s' => \$opts{'species-assembly'},
+     'p|process=s' => \$opts{'process'},
+     'g|logs=s' => \$opts{'lgs'},
+     'i|index=i' => \$opts{'index'},
+     'l|limit=i' => \$opts{'limit'},
+     'b|flag-bed-files=s' => \$opts{'flag-bed'},
+     'ab|annot-bed-files=s' => \$opts{'annot-bed'},
+     'in|germline-indel=s' => \$opts{'germindel'},
+     'u|unmatched-vcf=s' => \$opts{'unmatchedvcf'},
+     'np|normal-protocol=s' => \$opts{'normprot'},
+     'tp|tumour-protocol=s' => \$opts{'tumprot'},
+     'td|tum-cn-default=i' => \$opts{'tumdefcn'},
+     'nd|norm-cn-default=i' => \$opts{'normdefcn'},
+     'c|flagConfig=s' => \$opts{'flagConfig'},
+     'f|flagToVcfConfig=s' => \$opts{'flagToVcfConfig'},
+     'pm|prior-mut-probability=f' => \$opts{'priorMut'},
+     'ps|prior-snp-probability=f' => \$opts{'priorSnp'},
+     'a|apid=i' => \$opts{'apid'},
+     'NP|normal-platform=s' => \$opts{'tplat'},
+     'TP|tumour-platform=s' => \$opts{'nplat'},
+     'st|seqType=s' => \$opts{'seqType'},
+     'noflag|no-flagging' => \$opts{'noflag'},
+     'noclean' => \$opts{'noclean'},
+     'mpc|mut_probability_cutoff=f' => \$opts{'mpc'},
+     'spc|snp_probability_cutoff=f' => \$opts{'spc'},
+     'e|read-count=i' => \$opts{'read-count'},
+     'x|exclude=s' => \$opts{'exclude'},
+     'dbg|debug' => \$opts{'debug_cave'},
   ) or pod2usage(2);
 
   pod2usage(-verbose => 1) if(defined $opts{'h'});
@@ -388,71 +387,74 @@ sub setup {
   #Get bam header, species/assembly
   getSpeciesAssemblyFromBam(\%opts);
 
-	pod2usage(-msg  => "\nERROR: 'species' must be defined, see BAM header options.\n", -verbose => 2,  -output => \*STDERR) unless(defined $opts{'species'});
-	pod2usage(-msg  => "\nERROR: 'species-assembly' must be defined, see BAM header options.\n", -verbose => 2,  -output => \*STDERR) unless(defined $opts{'species-assembly'});
-	pod2usage(-msg  => "\nERROR: 'seqType' must be defined and one of the permitted list: ".join("|",@PERMITTED_SEQ_TYPES).".\n", -verbose => 2,  -output => \*STDERR) unless(defined $opts{'seqType'} && grep {$opts{'seqType'}} @PERMITTED_SEQ_TYPES);
+  pod2usage(-msg  => "\nERROR: 'species' must be defined, see BAM header options.\n", -verbose => 2,  -output => \*STDERR) unless(defined $opts{'species'});
+  pod2usage(-msg  => "\nERROR: 'species-assembly' must be defined, see BAM header options.\n", -verbose => 2,  -output => \*STDERR) unless(defined $opts{'species-assembly'});
+  pod2usage(-msg  => "\nERROR: 'seqType' must be defined and one of the permitted list: ".join("|",@PERMITTED_SEQ_TYPES).".\n", -verbose => 2,  -output => \*STDERR) unless(defined $opts{'seqType'} && grep {$opts{'seqType'}} @PERMITTED_SEQ_TYPES);
 
   #check the reference is the fasta fai file.
   pod2usage(-msg  => "\nERROR: reference option (-r) does not appear to be a fasta index file.\n", -verbose => 2,  -output => \*STDERR) unless($opts{'reference'} =~ m/\.fai$/);
 
   if(defined($opts{'normprot'})){
-		my $good_prot = 0;
-		foreach my $val_p(@VALID_PROTOCOLS){
-			$good_prot = 1 if($val_p eq $opts{'normprot'});
-		}
-		pod2usage(-msg  => "\nERROR: -normal-protocol '".$opts{'normprot'}."' must be a valid protocol: ".
-									join('|',@VALID_PROTOCOLS).".\n", -verbose => 2,  -output => \*STDERR) unless($good_prot);
-  }else{
-		$opts{'normprot'} = $DEFAULT_PROTOCOL;
+  my $good_prot = 0;
+  foreach my $val_p(@VALID_PROTOCOLS){
+    $good_prot = 1 if($val_p eq $opts{'normprot'});
+  }
+  pod2usage(-msg  => "\nERROR: -normal-protocol '".$opts{'normprot'}."' must be a valid protocol: ".
+         join('|',@VALID_PROTOCOLS).".\n", -verbose => 2,  -output => \*STDERR) unless($good_prot);
+  }
+  else{
+    $opts{'normprot'} = $DEFAULT_PROTOCOL;
   }
 
   if(defined($opts{'tumprot'})){
-		my $good_prot = 0;
-		foreach my $val_p(@VALID_PROTOCOLS){
-			$good_prot = 1 if($val_p eq $opts{'tumprot'});
-		}
-		pod2usage(-msg  => "\nERROR: -tumour-protocol '".$opts{'tumprot'}."' must be a valid protocol: ".
-									join('|',@VALID_PROTOCOLS).".\n", -verbose => 2,  -output => \*STDERR) unless($good_prot);
-  }else{
-  	$opts{'tumprot'} = $DEFAULT_PROTOCOL;
+  my $good_prot = 0;
+  foreach my $val_p(@VALID_PROTOCOLS){
+    $good_prot = 1 if($val_p eq $opts{'tumprot'});
+  }
+  pod2usage(-msg  => "\nERROR: -tumour-protocol '".$opts{'tumprot'}."' must be a valid protocol: ".
+         join('|',@VALID_PROTOCOLS).".\n", -verbose => 2,  -output => \*STDERR) unless($good_prot);
+  }
+  else{
+    $opts{'tumprot'} = $DEFAULT_PROTOCOL;
   }
 
   # now safe to apply defaults
-	$opts{'threads'} = 1 unless(defined $opts{'threads'});
+  $opts{'threads'} = 1 unless(defined $opts{'threads'});
 
-	if(defined $opts{'normcont'}) {
-	  if(-e $opts{'normcont'}) {
-	    pod2usage(-msg => "\nERROR: '-k' appears to be an empty file.\n", -verbose => 2,  -output => \*STDERR) if(-s _ == 0);
-	    my $value = capture_stdout{ system(qq{grep -F 'NormalContamination' $opts{normcont}}); };
-	    chomp $value;
-	    if($value =~ m/^NormalContamination\s([[:digit:]]\.?[[:digit:]]*)$/) {
-	      $opts{'normcont'} = $1;
-	    }
-	    else {
-	      pod2usage(-msg => "\nERROR: Failed to get normal-contamination from $opts{normcont} file.\n", -verbose => 2,  -output => \*STDERR);
-	    }
-	  }
-	}
-	else {
-	  $opts{'normcont'} = 0.1;
-	}
+  if(defined $opts{'normcont'}) {
+    if(-e $opts{'normcont'}) {
+      pod2usage(-msg => "\nERROR: '-k' appears to be an empty file.\n", -verbose => 2,  -output => \*STDERR) if(-s _ == 0);
+      my $value = capture_stdout{ system(qq{grep -F 'NormalContamination' $opts{normcont}}); };
+      chomp $value;
+      if($value =~ m/^NormalContamination\s([[:digit:]]\.?[[:digit:]]*)$/) {
+         $opts{'normcont'} = $1;
+      }
+      else {
+       pod2usage(-msg => "\nERROR: Failed to get normal-contamination from $opts{normcont} file.\n", -verbose => 2,  -output => \*STDERR);
+      }
+    }
+  }
+  else {
+   $opts{'normcont'} = 0.1;
+  }
 
-	pod2usage(-msg => "\nERROR: normal-contamination should be <1 even if from ASCAT.samplestatistics.csv file ($opts{normcont}).\n", -verbose => 2,  -output => \*STDERR) unless($opts{'normcont'} =~ m/^0\.?[[:digit:]]*$/);
+  pod2usage(-msg => "\nERROR: normal-contamination should be <1 even if from ASCAT.samplestatistics.csv file ($opts{normcont}).\n", -verbose => 2,  -output => \*STDERR) unless($opts{'normcont'} =~ m/^0\.?[[:digit:]]*$/);
 
-	#Create the results directory in the output directory given.
-	my $tmpdir = File::Spec->catdir($opts{'outdir'}, 'tmpCaveman');
-	$opts{'tmp'} = $tmpdir;
-	my $resultsdir = File::Spec->catdir($opts{'tmp'}, 'results');
-	#directory to store progress reports
-	my $progress = File::Spec->catdir($opts{'tmp'}, 'progress');
-	#Directory to store run logs.
-	my $logs;
-	if(defined $opts{'lgs'}){
-	  $logs = $opts{'lgs'};
-	}else{
+  #Create the results directory in the output directory given.
+  my $tmpdir = File::Spec->catdir($opts{'outdir'}, 'tmpCaveman');
+  $opts{'tmp'} = $tmpdir;
+  my $resultsdir = File::Spec->catdir($opts{'tmp'}, 'results');
+  #directory to store progress reports
+  my $progress = File::Spec->catdir($opts{'tmp'}, 'progress');
+  #Directory to store run logs.
+  my $logs;
+  if(defined $opts{'lgs'}){
+    $logs = $opts{'lgs'};
+  }
+  else{
     $logs = File::Spec->catdir($opts{'tmp'}, 'logs');
-	}
-	$opts{'logs'} = $logs;
+  }
+  $opts{'logs'} = $logs;
 
   my $config_file = File::Spec->catfile($opts{'tmp'},$CAVEMAN_CONFIG);
   $opts{'cave_cfg'} = $config_file;
@@ -464,13 +466,13 @@ sub setup {
   $opts{'cave_carr'} = $cov_arr;
 
   $opts{'splitList'} = File::Spec->catfile($opts{'tmp'},"splitList");
-	#vcf concat subs & snps
+  #vcf concat subs & snps
   $opts{'subvcf'} = File::Spec->catfile($opts{'tmp'},"results/%/%.muts.vcf.gz");
   $opts{'snpvcf'} = File::Spec->catfile($opts{'tmp'},"results/%/%.snps.vcf.gz");
-	#bed concat no_analysis
+  #bed concat no_analysis
   $opts{'noanalysisbed'} = File::Spec->catfile($opts{'tmp'},"results/%/%.no_analysis.bed");
 
-	if(exists $opts{'process'}) {
+  if(exists $opts{'process'}) {
     PCAP::Cli::valid_process('process', $opts{'process'}, \@VALID_PROCESS);
     if(exists $opts{'index'}) {
       my $max = $index_max{$opts{'process'}};
@@ -479,8 +481,8 @@ sub setup {
           $max = $opts{'limit'};
         }
         else {
-      	  $max = Sanger::CGP::Caveman::Implement::valid_index(\%opts);
-      	}
+          $max = Sanger::CGP::Caveman::Implement::valid_index(\%opts);
+        }
       }
 
       die "ERROR: based on reference and exclude option index must be between 1 and $max\n" if($opts{'index'} < 1 || $opts{'index'} > $max);
