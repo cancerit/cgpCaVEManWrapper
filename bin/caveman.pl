@@ -260,7 +260,7 @@ sub getSpeciesAssemblyFromBam{
         my $species = $1;
         warn sprintf $SP_ASS_MESSAGE, 'Species', $opts->{'species'}, $species
           if(defined $opts->{'species'} && $opts->{'species'} ne $species);
-        $opts->{'species'} = $species if ( not defined $opts->{'species'};
+        $opts->{'species'} = $species if ( not defined $opts->{'species'} );
       }
       last;
     }
