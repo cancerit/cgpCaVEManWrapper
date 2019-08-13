@@ -552,6 +552,7 @@ caveman.pl [options]
     -snp_probability_cutoff -spc    Minimum total germline genotype probability for output
     -read-count             -e      Modify the split size (caveman split) [350,000]
     -debug                  -dbg    Run CaVEMan Estep in debug mode
+    -exclude                -x      List of chromosomes to exclude (comma separated list)
 
   Optional flagging parameters: [default to those found in cgpCaVEManPostProcessing]
     -flagConfig            -c   Config ini file to use for flag list and settings
@@ -687,6 +688,14 @@ For example run as `-no-flagging -noclean` and subsequently run `-p flag`.
 Modify the read count threshold used when splitting into mstep/estep jobs.
 
 =item B<-debug>
+
+Run the CaVEMan estep in debug mode. This causes CaVEMan to output a
+.dbg.vcf file containing an entry for every analysed position in the genome
+
+=item B<-exclude>i
+
+Comma separated list of chromosomes to exclude from analysis. Accepts % as a wildcard.
+Eg. MT,GL%,hs37d5,NC_007605 (excludes "non standard" human chromosomes)
 
 Run the CaVEMan estep in debug mode. This causes CaVEMan to output a
 .dbg.vcf file containing an entry for every analysed position in the genome
