@@ -692,7 +692,7 @@ Modify the read count threshold used when splitting into mstep/estep jobs.
 Run the CaVEMan estep in debug mode. This causes CaVEMan to output a
 .dbg.vcf file containing an entry for every analysed position in the genome
 
-=item B<-exclude>i
+=item B<-exclude>
 
 Comma separated list of chromosomes to exclude from analysis. Accepts % as a wildcard.
 Eg. MT,GL%,hs37d5,NC_007605 (excludes "non standard" human chromosomes)
