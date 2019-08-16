@@ -2,52 +2,26 @@ notifications:
   slack: wtsi-cgpit:ptUMR1tkNyZJYd9TpGoss8WR
   email: false
 
-env:
-  - CC=gcc
+sudo: false
 
-addons:
-  apt:
-    packages:
-      - build-essential # everything
-      - autoconf # biobambam
-      - libtool # biobambam
-      - zlib1g-dev # many
-      - nettle-dev # cgpBigWig
-      - libncurses5-dev # samtools
-      - unzip # kentools/pcap
-      - libcurl4-openssl-dev # many
-      - libdb-dev
-      - libgd-dev
+language: ruby
 
-install: true
-
-language: perl
-
-perl:
-  - "5.22"
+services:
+  - docker
 
 script:
   - set -e
-  - export PATH=$HOME/install/bin:$HOME/install/biobambam2/bin:$PATH
-  - git clone --depth 1 --single-branch --branch develop https://github.com/cancerit/cgpBigWig.git
-  - cd cgpBigWig
-  - ./setup.sh $HOME/install
-  - cd ../
-  - git clone --depth 1 --single-branch --branch develop https://github.com/cancerit/PCAP-core.git
-  - cd PCAP-core
-  - ./setup.sh $HOME/install
-  - cd ../
-  - git clone --depth 1 --single-branch --branch dev https://github.com/cancerit/cgpVcf.git
-  - cd cgpVcf
-  - ./setup.sh $HOME/install
-  - cd ../
-  - git clone --depth 1 --single-branch --branch dev https://github.com/cancerit/cgpCaVEManPostProcessing.git
-  - cd cgpCaVEManPostProcessing
-  - ./setup.sh $HOME/install
-  - cd ../
-  - ./setup.sh $HOME/install
-  - cd ../
-  - perl -I $HOME/install/lib/perl5 ~/install/bin/caveman.pl -v
-
-dist: trusty
-sudo: false
+  - echo 'Build and check docker image'
+  - docker build -t cavemanwrap .
+  - docker images | grep -c cavemanwrap
+  - echo 'Verify program(s) from each inherited base image - dockstore-cgpbigwig'
+  - docker run -t --rm cavemanwrap bwjoin --version
+  - echo 'Verify program(s) from each inherited base image - dockstore-cgpmap'
+  - docker run -t --rm cavemanwrap bwa_mem.pl -version
+  - docker run -t --rm cavemanwrap bammarkduplicates2 --version
+  - docker run -t --rm cavemanwrap samtools --version
+  - docker run -t --rm cavemanwrap bash -c 'bwa 2>&1 | grep Version'
+  - echo 'Verify program(s) from this repo'
+  - docker run -t --rm cavemanwrap caveman -v
+  - docker run -t --rm cavemanwrap cgpFlagCaVEMan.pl --version
+  - docker run -t --rm cavemanwrap caveman.pl -v
