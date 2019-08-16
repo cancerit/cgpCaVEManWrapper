@@ -1,5 +1,10 @@
 # CHANGES
 
+## 1.14.0
+
+* Created Docker file to build a containder for the wrapper. 
+* Added quay.io badge for the image to the README.
+
 ## 1.13.14
 
 * Adds `-noclean` option to allow resumption following `-noflag` execution.
