@@ -79,7 +79,7 @@ fi
 
 ### CaVEMan
 if [ ! -e $SETUP_DIR/CaVEMan.success ]; then
-  curl -sSL --retry 10 https://github.com/cancerit/CaVEMan/archive/${VER_CAVEMAN}.tar.gz > distro.tar.gz
+  curl -sSL --retry 10 https://github.com/cancerit/CaVEMan/archive/feature/somatic_allele_prob.tar.gz > distro.tar.gz
   rm -rf distro/*
   tar --strip-components 1 -C distro -xzf distro.tar.gz
   cd distro
