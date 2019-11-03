@@ -1,5 +1,9 @@
 # CHANGES
 
+## 1.14.1
+
+* Use CaVEMan core [1.13.16](https://github.com/cancerit/CaVEMan/releases/tag/1.13.15)
+
 ## 1.14.0
 
 * Created Docker file to build a containder for the wrapper. 

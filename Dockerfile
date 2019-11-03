@@ -5,10 +5,10 @@ USER  root
 # ALL tool versions used by opt-build.sh
 ENV VER_VCFTOOLS="0.1.16"
 ENV VER_CGPVCF="v2.2.1"
-ENV VER_CAVEMAN="377a5fc0361c9cf93352f03c56289152162d4fe4"
+ENV VER_CAVEMAN="1.13.16"
 ENV VER_BEDTOOLS="2.27.1"
 ENV VER_CGPCAVEPOSTPROC="1.8.7"
-ENV VER_CGPCAVEWRAP="1.13.14"
+ENV VER_CGPCAVEWRAP="1.14.1"
 
 RUN apt-get -yq update
 RUN apt-get install -yq --no-install-recommends \
