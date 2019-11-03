@@ -2,7 +2,7 @@
 
 ## 1.14.1
 
-* Use CaVEMan core [1.13.16](https://github.com/cancerit/CaVEMan/releases/tag/1.13.15)
+* Use CaVEMan core [1.13.16](https://github.com/cancerit/CaVEMan/releases/tag/1.13.16)
 
 ## 1.14.0
 
