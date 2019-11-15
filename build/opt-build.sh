@@ -47,6 +47,7 @@ export LD_LIBRARY_PATH=`echo $INST_PATH/lib:$LD_LIBRARY_PATH | perl -pe 's/:\$//
 export PATH=`echo $INST_PATH/bin:$PATH | perl -pe 's/:\$//;'`
 export MANPATH=`echo $INST_PATH/man:$INST_PATH/share/man:$MANPATH | perl -pe 's/:\$//;'`
 export PERL5LIB=`echo $INST_PATH/lib/perl5:$PERL5LIB | perl -pe 's/:\$//;'`
+export C_INCLUDE_PATH=`echo $INST_PATH/include/ | perl -pe 's/:\$//;'`
 set -u
 
 ## linasm library required by CaVEMan core
