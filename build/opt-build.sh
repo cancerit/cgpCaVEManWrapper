@@ -54,7 +54,7 @@ set -u
 if [ ! -e $SETUP_DIR/linasm.success ]; then
   curl -sSL --retry 10 https://sourceforge.net/projects/linasm/files/linasm-1.13%28stable%29.tar.gz/download > distro.tar.gz
   rm -rf distro/*
-  tar --strip-components 2 -C distro -xzf distro.tar.gz
+  tar --strip-components 1 -C distro -xzf distro.tar.gz
   cd distro
   make
   make install prefix=$INST_PATH
