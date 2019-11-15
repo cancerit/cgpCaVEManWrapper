@@ -1,4 +1,4 @@
-FROM  quay.io/wtsicgp/dockstore-cgpmap:3.1.4 as builder
+FROM  quay.io/wtsicgp/pcap-core:4.4.0 as builder
 
 USER  root
 
@@ -27,6 +27,7 @@ ENV OPT /opt/wtsi-cgp
 ENV PATH $OPT/bin:$OPT/biobambam2/bin:$PATH
 ENV PERL5LIB $OPT/lib/perl5
 ENV LD_LIBRARY_PATH $OPT/lib
+ENV C_INCLUDE_PATH $OPT/include/
 ENV LC_ALL en_US.UTF-8
 ENV LANG en_US.UTF-8
 
