@@ -49,6 +49,19 @@ export MANPATH=`echo $INST_PATH/man:$INST_PATH/share/man:$MANPATH | perl -pe 's/
 export PERL5LIB=`echo $INST_PATH/lib/perl5:$PERL5LIB | perl -pe 's/:\$//;'`
 set -u
 
+## linasm library required by CaVEMan core
+if [ ! -e $SETUP_DIR/linasm.success ]; then
+  curl -sSL --retry 10 https://sourceforge.net/projects/linasm/files/linasm-1.13%28stable%29.tar.gz/download > distro.tar.gz
+  rm -rf distro/*
+  tar --strip-components 2 -C distro -xzf distro.tar.gz
+  cd distro
+  make
+  make install prefix=$INST_PATH
+  cd $SETUP_DIR
+  rm -rf distro.* distro/*
+  touch $SETUP_DIR/linasm.success.success
+fi
+
 
 ## vcftools
 if [ ! -e $SETUP_DIR/vcftools.success ]; then
