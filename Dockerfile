@@ -71,6 +71,7 @@ ENV OPT /opt/wtsi-cgp
 ENV PATH $OPT/bin:$OPT/biobambam2/bin:$PATH
 ENV PERL5LIB $OPT/lib/perl5
 ENV LD_LIBRARY_PATH $OPT/lib
+ENV C_INCLUDE_PATH $OPT/include/
 ENV LC_ALL en_US.UTF-8
 ENV LANG en_US.UTF-8
 
