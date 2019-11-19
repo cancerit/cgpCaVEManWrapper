@@ -1,5 +1,10 @@
 # CHANGES
 
+## Next
+
+* Build around CaVEMan core [VERSION](LINK) - uses linasm and red_position calculation speedups
+* Add linasm installation to Docker build scripts
+
 ## 1.14.1
 
 * Use CaVEMan core [1.13.16](https://github.com/cancerit/CaVEMan/releases/tag/1.13.16)
