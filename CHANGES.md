@@ -4,6 +4,7 @@
 
 * Build around CaVEMan core [1.14.0](https://github.com/cancerit/CaVEMan/releases/tag/1.14.0) - uses linasm and read_position calculation speedups
 * Add linasm installation to Docker build scripts
+* Change base Docker build to `quay.io/wtsicgp/pcap-core:4.4.0`
 
 ## 1.14.1
 
