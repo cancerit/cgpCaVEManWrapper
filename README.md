@@ -28,6 +28,7 @@ The docker images are know to work correctly after import into a singularity ima
 ## Dependencies/Install
 Please install the following first:
 
+* [linasm][linasm-url]
 * [PCAP-core][pcap-core-rel]
 * [cgpCaVEManPostProcessing][caveman-pp-rel]
 
@@ -98,6 +99,7 @@ identical to a statement that reads ‘Copyright (c) 2005, 2006, 2007, 2008,
 [bio-db-hts]: http://search.cpan.org/dist/Bio-DB-HTS
 [ds-cgpwxs-git]: https://github.com/cancerit/dockstore-cgpwxs
 [ds-cgpwgs-git]: https://github.com/cancerit/dockstore-cgpwgs
+[linasm-url]: http://linasm.sourceforge.net/index.php
 
 <!-- Travis -->
 [travis-base]: https://travis-ci.org/cancerit/cgpCaVEManWrapper
