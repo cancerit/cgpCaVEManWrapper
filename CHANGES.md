@@ -2,7 +2,7 @@
 
 ## Next
 
-* Build around CaVEMan core [VERSION](LINK) - uses linasm and read_position calculation speedups
+* Build around CaVEMan core [1.14.0](https://github.com/cancerit/CaVEMan/releases/tag/1.14.0) - uses linasm and read_position calculation speedups
 * Add linasm installation to Docker build scripts
 
 ## 1.14.1
