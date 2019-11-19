@@ -1,14 +1,14 @@
-FROM  quay.io/wtsicgp/dockstore-cgpmap:3.1.4 as builder
+FROM  quay.io/wtsicgp/pcap-core:4.4.0 as builder
 
 USER  root
 
 # ALL tool versions used by opt-build.sh
 ENV VER_VCFTOOLS="0.1.16"
 ENV VER_CGPVCF="v2.2.1"
-ENV VER_CAVEMAN="1.13.16"
+ENV VER_CAVEMAN="1.14.0"
 ENV VER_BEDTOOLS="2.27.1"
 ENV VER_CGPCAVEPOSTPROC="1.8.7"
-ENV VER_CGPCAVEWRAP="1.14.1"
+ENV VER_CGPCAVEWRAP="1.15.0"
 
 RUN apt-get -yq update
 RUN apt-get install -yq --no-install-recommends \
@@ -27,6 +27,7 @@ ENV OPT /opt/wtsi-cgp
 ENV PATH $OPT/bin:$OPT/biobambam2/bin:$PATH
 ENV PERL5LIB $OPT/lib/perl5
 ENV LD_LIBRARY_PATH $OPT/lib
+ENV C_INCLUDE_PATH $OPT/include/
 ENV LC_ALL en_US.UTF-8
 ENV LANG en_US.UTF-8
 
@@ -71,6 +72,7 @@ ENV OPT /opt/wtsi-cgp
 ENV PATH $OPT/bin:$OPT/biobambam2/bin:$PATH
 ENV PERL5LIB $OPT/lib/perl5
 ENV LD_LIBRARY_PATH $OPT/lib
+ENV C_INCLUDE_PATH $OPT/include/
 ENV LC_ALL en_US.UTF-8
 ENV LANG en_US.UTF-8
 
