@@ -355,6 +355,7 @@ sub caveman_flag {
 
   for my $index(@indicies) {
     next if PCAP::Threaded::success_exists(File::Spec->catdir($tmp, 'progress'), $index);
+    print $options->{'species-assembly'}."\n";
     my $script = _which($FLAG_SCRIPT) || die "Unable to find '$FLAG_SCRIPT' in path";
   	my $flag = $^X.' '.$script;
   	$flag .= sprintf($CAVEMAN_FLAG,
