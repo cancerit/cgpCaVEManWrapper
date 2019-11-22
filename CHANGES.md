@@ -1,5 +1,9 @@
 # CHANGES
 
+## 1.15.1
+
+* Force all executed command output to `logs/*.{out,err}`, other method seems to behave oddly under singularity
+
 ## 1.15.0
 
 * Build around CaVEMan core [1.14.0](https://github.com/cancerit/CaVEMan/releases/tag/1.14.0) - uses linasm and read_position calculation speedups
