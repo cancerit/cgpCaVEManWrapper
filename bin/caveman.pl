@@ -85,7 +85,6 @@ my %index_max = ( 'setup' => 1,
 	Sanger::CGP::Caveman::Implement::prepare($options);
 
 	my $threads = PCAP::Threaded->new($options->{'threads'});
-	&PCAP::Threaded::disable_out_err if(exists $options->{'index'});
 
   # register processes
 	$threads->add_function('caveman_split', \&Sanger::CGP::Caveman::Implement::caveman_split);
