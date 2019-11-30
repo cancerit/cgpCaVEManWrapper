@@ -65,6 +65,8 @@ const my $IDS_MUTS_TBI => q{%s.muts.ids.vcf.gz.tbi};
 const my $NO_ANALYSIS => q{%s.no_analysis.bed};
 const my $SP_ASS_MESSAGE => qq{%s defined at commandline (%s) does not match that in the BAM file (%s). Defaulting to BAM file value.\n};
 const my $SPLIT_LINE_COUNT => 25000;
+const my $SPLIT_STEP_READ_COUNT => 500000;
+
 
 const my @VALID_PROTOCOLS => qw(WGS WXS RNA AMPLICON TARGETED RNA-Seq);
 const my @PERMITTED_SEQ_TYPES => qw(pulldown|exome|genome|genomic|followup|targeted|rna_seq);
@@ -370,7 +372,7 @@ sub setup {
   delete $opts{'limit'} unless(defined $opts{'limit'});
   delete $opts{'exclude'} unless(defined $opts{'exclude'});
 
-  $opts{'read-count'} = 350_000 unless(defined $opts{'read-count'});
+  $opts{'read-count'} = $SPLIT_STEP_READ_COUNT unless(defined $opts{'read-count'});
 
   PCAP::Cli::file_for_reading('germline-indel-bed',$opts{'germindel'}) if(defined $opts{'germindel'});
   PCAP::Cli::out_dir_check('outdir', $opts{'outdir'});
