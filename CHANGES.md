@@ -1,5 +1,9 @@
 # CHANGES
 
+## 1.15.2
+
+* Upgrade to cgpCavEMAnPostProcessing [1.8.9](https://github.com/cancerit/cgpCaVEManPostProcessing/releases/tag/1.8.9)
+
 ## 1.15.1
 
 * Force all executed command output to `logs/*.{out,err}`, other method seems to behave oddly under singularity
