@@ -42,7 +42,7 @@ FROM ubuntu:16.04
 
 LABEL maintainer="cgphelp@sanger.ac.uk" \
       uk.ac.sanger.cgp="Cancer, Ageing and Somatic Mutation, Wellcome Trust Sanger Institute" \
-      version="1.15.3" \
+      version="1.16.0" \
       description="cgpCaVEManWrapper docker"
 
 RUN apt-get -yq update

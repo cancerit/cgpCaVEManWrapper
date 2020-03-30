@@ -1,5 +1,11 @@
 # CHANGES
 
+## 1.16.0
+
+* Pulls in cgpCaVEManPostProcessing 1.9.0
+  * Edgecase fix for overlapping reads - cause +1 variant at WGS scale
+  * Major performance improvement (in post processing)
+
 ## 1.15.3
 
 * Build around CaVEMan core [1.14.1](https://github.com/cancerit/CaVEMan/releases/tag/1.14.0)
@@ -24,7 +30,7 @@
 
 ## 1.14.0
 
-* Created Docker file to build a containder for the wrapper. 
+* Created Docker file to build a containder for the wrapper.
 * Added quay.io badge for the image to the README.
 
 ## 1.13.14
