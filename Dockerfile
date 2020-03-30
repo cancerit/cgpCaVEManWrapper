@@ -7,8 +7,7 @@ ENV VER_VCFTOOLS="0.1.16"
 ENV VER_CGPVCF="v2.2.1"
 ENV VER_CAVEMAN="1.14.1"
 ENV VER_BEDTOOLS="2.27.1"
-ENV VER_CGPCAVEPOSTPROC="1.8.9"
-ENV VER_CGPCAVEWRAP="1.15.3"
+ENV VER_CGPCAVEPOSTPROC="1.9.0"
 
 RUN apt-get -yq update
 RUN apt-get install -yq --no-install-recommends \
@@ -43,7 +42,7 @@ FROM ubuntu:16.04
 
 LABEL maintainer="cgphelp@sanger.ac.uk" \
       uk.ac.sanger.cgp="Cancer, Ageing and Somatic Mutation, Wellcome Trust Sanger Institute" \
-      version="1.15.3" \
+      version="1.16.0" \
       description="cgpCaVEManWrapper docker"
 
 RUN apt-get -yq update
