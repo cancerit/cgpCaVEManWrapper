@@ -22,7 +22,6 @@ RUN apt-get install -yq --no-install-recommends liblzma-dev
 RUN apt-get install -yq --no-install-recommends libcurl4-openssl-dev
 
 
-
 RUN locale-gen en_US.UTF-8
 RUN update-locale LANG=en_US.UTF-8
 
@@ -46,7 +45,7 @@ FROM ubuntu:20.04
 
 LABEL maintainer="cgphelp@sanger.ac.uk" \
       uk.ac.sanger.cgp="Cancer, Ageing and Somatic Mutation, Wellcome Trust Sanger Institute" \
-      version="1.16.0" \
+      version="1.17.0" \
       description="cgpCaVEManWrapper docker"
 
 
