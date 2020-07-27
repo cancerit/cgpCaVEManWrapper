@@ -1,5 +1,11 @@
 # CHANGES
 
+## 1.17.0
+
+* Updated Dockerfile to use PCAP-core 5.2.2
+* Updated setup.sh script to remove redundant logic
+* Updated CaVEMan core to [1.15.0](https://github.com/cancerit/CaVEMan/releases/tag/1.15.0)
+
 ## 1.16.0
 
 * Pulls in cgpCaVEManPostProcessing 1.9.0

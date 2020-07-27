@@ -1,23 +1,26 @@
-FROM  quay.io/wtsicgp/pcap-core:4.4.0 as builder
+FROM  quay.io/wtsicgp/pcap-core:5.2.2 as builder
 
 USER  root
 
 # ALL tool versions used by opt-build.sh
 ENV VER_VCFTOOLS="0.1.16"
 ENV VER_CGPVCF="v2.2.1"
-ENV VER_CAVEMAN="1.14.1"
+ENV VER_CAVEMAN="1.15.0"
 ENV VER_BEDTOOLS="2.27.1"
 ENV VER_CGPCAVEPOSTPROC="1.9.0"
 
 RUN apt-get -yq update
-RUN apt-get install -yq --no-install-recommends \
-locales \
-g++ \
-make \
-gcc \
-pkg-config \
-python \
-zlib1g-dev
+RUN apt-get install -yq --no-install-recommends locales
+RUN apt-get install -yq --no-install-recommends g++
+RUN apt-get install -yq --no-install-recommends make
+RUN apt-get install -yq --no-install-recommends gcc
+RUN apt-get install -yq --no-install-recommends pkg-config
+RUN apt-get install -yq --no-install-recommends python
+RUN apt-get install -yq --no-install-recommends zlib1g-dev
+RUN apt-get install -yq --no-install-recommends libbz2-dev
+RUN apt-get install -yq --no-install-recommends liblzma-dev
+RUN apt-get install -yq --no-install-recommends libcurl4-openssl-dev
+
 
 RUN locale-gen en_US.UTF-8
 RUN update-locale LANG=en_US.UTF-8
@@ -38,16 +41,16 @@ RUN bash build/opt-build.sh $OPT
 COPY . .
 RUN bash build/opt-build-local.sh $OPT
 
-FROM ubuntu:16.04
+FROM ubuntu:20.04
 
 LABEL maintainer="cgphelp@sanger.ac.uk" \
       uk.ac.sanger.cgp="Cancer, Ageing and Somatic Mutation, Wellcome Trust Sanger Institute" \
-      version="1.16.0" \
+      version="1.17.0" \
       description="cgpCaVEManWrapper docker"
+
 
 RUN apt-get -yq update
 RUN apt-get install -yq --no-install-recommends \
-apt-transport-https \
 locales \
 curl \
 ca-certificates \
@@ -59,6 +62,10 @@ zlib1g \
 liblzma5 \
 libncurses5 \
 p11-kit \
+libcurl3-gnutls \
+libcurl4 \
+moreutils \
+google-perftools \
 unattended-upgrades && \
 unattended-upgrade -d -v && \
 apt-get remove -yq unattended-upgrades && \
