@@ -25,7 +25,7 @@
 # need to keep in sync with Dockerfile
 export VER_VCFTOOLS="0.1.16"
 export VER_CGPVCF="v2.2.1"
-export VER_CAVEMAN="1.15.0"
+export VER_CAVEMAN="feature/tumour_in_normal"
 export VER_BEDTOOLS="2.27.1"
 export VER_CGPCAVEPOSTPROC="1.9.0"
 
