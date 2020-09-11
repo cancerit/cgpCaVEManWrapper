@@ -66,6 +66,8 @@ const my $NO_ANALYSIS => q{%s.no_analysis.bed};
 const my $SP_ASS_MESSAGE => qq{%s defined at commandline (%s) does not match that in the BAM file (%s). Defaulting to BAM file value.\n};
 const my $SPLIT_LINE_COUNT => 25000;
 const my $SPLIT_STEP_READ_COUNT => 500000;
+const my $NORMAL_CONTAMINATION_DEFAULT => 0.1;
+const my $TUMOUR_CONTAMINATION_DEFAULT => 0.0;
 
 
 const my @VALID_PROTOCOLS => qw(WGS WXS RNA AMPLICON TARGETED RNA-Seq);
@@ -286,6 +288,7 @@ sub setup {
 					'nc|normal-cn=s' => \$opts{'normcn'},
 					't|threads=i' => \$opts{'threads'},
 					'k|normal-contamination=s' => \$opts{'normcont'},
+                    'z|tumour-contamination=s' => \$opts{'tumcont'},
 					's|species=s' => \$opts{'species'},
 					'sa|species-assembly=s' => \$opts{'species-assembly'},
 					'p|process=s' => \$opts{'process'},
@@ -435,10 +438,15 @@ sub setup {
 	  }
 	}
 	else {
-	  $opts{'normcont'} = 0.1;
+	  $opts{'normcont'} = $NORMAL_CONTAMINATION_DEFAULT;
 	}
 
+    if(! defined $opts{'tumcont'}) {
+        $opts{'tumcont'} = $TUMOUR_CONTAMINATION_DEFAULT;
+    }
+
 	pod2usage(-msg => "\nERROR: normal-contamination should be <1 even if from ASCAT.samplestatistics.csv file ($opts{normcont}).\n", -verbose => 2,  -output => \*STDERR) unless($opts{'normcont'} =~ m/^0\.?[[:digit:]]*$/);
+    pod2usage(-msg => "\nERROR: tumour-contamination should be <1 ($opts{tummcont}).\n", -verbose => 2,  -output => \*STDERR) unless($opts{'tumcont'} =~ m/^0\.?[[:digit:]]*$/);
 
 	#Create the results directory in the output directory given.
 	my $tmpdir = File::Spec->catdir($opts{'outdir'}, 'tmpCaveman');
@@ -532,6 +540,7 @@ caveman.pl [options]
 
    Optional parameters:
     -normal-contamination   -k      Normal contamination value (default 0.1)
+    -tumour-contamination   -z      Tumour contamination value (default 0.0)
     -threads                -t      Number of threads allowed on this machine (default 1)
     -limit                  -l      Limit the number of jobs required for m/estep (default undef)
     -logs                   -g      Location to write logs (default is ./logs)
@@ -596,6 +605,14 @@ Default copy number to use to fill in gaps in the tumour copy number file [defau
 =item B<-norm-cn-default>
 
 Default copy number to use to fill in gaps in the normal copy number file [default: 2]
+
+=item B<-normal-contamination>
+
+Float representing proportion of contamination in of normal in tumour
+
+=item B<-tumour-contamination>
+
+Float representing proportion of contamination in of tumour in normal
 
 =item B<-ignore-file>
 

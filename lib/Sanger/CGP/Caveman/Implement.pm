@@ -42,7 +42,7 @@ const my $CAVEMAN_SETUP => q{ setup -t %s -n %s -r %s -g %s -l %s -f %s -c %s -a
 const my $CAVEMAN_SPLIT => q{ split -i %d -f %s -e %d};
 const my $CAVEMAN_MSTEP => q{ mstep -i %d -f %s};
 const my $CAVEMAN_MERGE => q{ merge -c %s -p %s -f %s};
-const my $CAVEMAN_ESTEP => q{ estep -i %d -k %f -g %s -o %s -v %s -w %s -f %s -l %s -r %s};
+const my $CAVEMAN_ESTEP => q{ estep -i %d -k %f -g %s -o %s -v %s -w %s -f %s -l %s -r %s -z %s};
 const my $CAVEMAN_ESTEP_MUT_PRIOR_EXT => q{ -c %s};
 const my $CAVEMAN_ESTEP_SNP_PRIOR_EXT => q{ -d %s};
 const my $CAVEMAN_ESTEP_NPLATFORM_EXT => q{ -P %s};
@@ -213,7 +213,8 @@ sub caveman_estep {
                     q{'}.$options->{'species'}.q{'},
                     $config,
                     $normprot,
-                    $tumprot);
+                    $tumprot,
+                    $options->{'tumcont'},);
 
     if(exists($options->{'normdefcn'}) && defined($options->{'normdefcn'})){ #Add default normal cn
       $command .= ' -n '.$options->{'normdefcn'};
