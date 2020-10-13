@@ -1,4 +1,4 @@
-FROM  quay.io/wtsicgp/pcap-core:5.2.2 as builder
+FROM  quay.io/wtsicgp/pcap-core:5.4.2 as builder
 
 USER  root
 
@@ -45,7 +45,7 @@ FROM ubuntu:20.04
 
 LABEL maintainer="cgphelp@sanger.ac.uk" \
       uk.ac.sanger.cgp="Cancer, Ageing and Somatic Mutation, Wellcome Trust Sanger Institute" \
-      version="1.17.0" \
+      version="1.17.1" \
       description="cgpCaVEManWrapper docker"
 
 
