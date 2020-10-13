@@ -1,5 +1,9 @@
 # CHANGES
 
+## 1.17.1
+
+* Updated Dockerfile to use PCAP-core 5.4.0 - samtools/htslib 1.11
+
 ## 1.17.0
 
 * Updated Dockerfile to use PCAP-core 5.2.2
