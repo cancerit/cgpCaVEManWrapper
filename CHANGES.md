@@ -1,5 +1,9 @@
 # CHANGES
 
+## 1.17.2
+
+* Update to CaVEMan 1.15.1
+
 ## 1.17.1
 
 * Updated Dockerfile to use PCAP-core 5.4.0 - samtools/htslib 1.11
