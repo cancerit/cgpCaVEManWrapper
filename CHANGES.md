@@ -1,5 +1,9 @@
 # CHANGES
 
+## 1.17.2
+
+* Updated CaVEMan core to [1.15.1](https://github.com/cancerit/CaVEMan/releases/tag/1.15.1)
+
 ## 1.17.1
 
 * Updated Dockerfile to use PCAP-core 5.4.0 - samtools/htslib 1.11
