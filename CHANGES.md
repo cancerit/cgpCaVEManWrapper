@@ -2,7 +2,7 @@
 
 ## 1.17.2
 
-* Update to CaVEMan 1.15.1
+* Updated CaVEMan core to [1.15.1](https://github.com/cancerit/CaVEMan/releases/tag/1.15.1)
 
 ## 1.17.1
 
