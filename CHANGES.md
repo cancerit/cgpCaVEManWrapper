@@ -1,5 +1,9 @@
 # CHANGES
 
+## 1.17.3
+
+* Updated cgpCaVEManPostProcessing to 1.9.2
+
 ## 1.17.2
 
 * Updated CaVEMan core to [1.15.1](https://github.com/cancerit/CaVEMan/releases/tag/1.15.1)
