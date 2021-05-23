@@ -1,5 +1,9 @@
 # CHANGES
 
+## 1.17.4
+
+* Updated cgpCaVEManPostProcessing to 1.9.3
+
 ## 1.17.3
 
 * Updated cgpCaVEManPostProcessing to 1.9.2
