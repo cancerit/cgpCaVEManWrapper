@@ -1,5 +1,10 @@
 # CHANGES
 
+## 1.17.5
+
+* Updated cgpCaVEManPostProcessing to 1.11.0
+* Added CirceCI
+
 ## 1.17.4
 
 * Updated cgpCaVEManPostProcessing to 1.9.3
