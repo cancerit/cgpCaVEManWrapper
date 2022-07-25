@@ -45,7 +45,7 @@ FROM ubuntu:20.04
 
 LABEL maintainer="cgphelp@sanger.ac.uk" \
       uk.ac.sanger.cgp="Cancer, Ageing and Somatic Mutation, Wellcome Trust Sanger Institute" \
-      version="1.17.1" \
+      version="1.18.1" \
       description="cgpCaVEManWrapper docker"
 
 
