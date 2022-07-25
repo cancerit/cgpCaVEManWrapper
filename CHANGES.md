@@ -1,6 +1,10 @@
 # CHANGES
 
-## 1.18.0
+## 1.18.1
+
+- Updated to cgpCaVEManPostProcessing [1.12.0](https://github.com/cancerit/cgpCaVEManPostProcessing/releases/tag/1.12.0)
+
+## 1.17.5
 
 - Upgrade to cgpCaVEMAnPostProcessing [1.11.0](https://github.com/cancerit/cgpCaVEManPostProcessing/releases/tag/1.11.0)
   - Now able to accept yaml format flagging ini file

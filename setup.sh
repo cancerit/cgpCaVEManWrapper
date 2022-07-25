@@ -35,7 +35,7 @@ export VER_VCFTOOLS="0.1.16"
 export VER_CGPVCF="v2.2.1"
 export VER_CAVEMAN="1.15.0"
 export VER_BEDTOOLS="2.27.1"
-export VER_CGPCAVEPOSTPROC="1.9.2"
+export VER_CGPCAVEPOSTPROC="1.12.0"
 
 get_file () {
 # output, source
