@@ -73,6 +73,8 @@ header:
     - 'build/'
     - '.*.yml'
     - 'MANIFEST*'
-    - 'bin/cpanm' 
+    - 'config/**/*.ini'
+    - 'config/flag.to.vcf.convert.ini'
+    - 'bin/cpanm'
 
   comment: on-failure

@@ -35,9 +35,9 @@ jobs:
             docker run -t --rm $IMAGE_NAME:$CLEAN_BRANCH samtools --version
             docker run -t --rm $IMAGE_NAME:$CLEAN_BRANCH bash -c 'bwa 2>&1 | grep Version'
             echo 'Verify program(s) from this repo'
-            docker run -t --rm $IMAGE_NAME:$CLEAN_BRANCH cgpFlagCaVEMan.pl --version
-            docker run -t --rm $IMAGE_NAME:$CLEAN_BRANCH caveman.pl --version
             docker run -t --rm $IMAGE_NAME:$CLEAN_BRANCH caveman -v
+            docker run -t --rm $IMAGE_NAME:$CLEAN_BRANCH cgpFlagCaVEMan.pl --version
+            docker run -t --rm $IMAGE_NAME:$CLEAN_BRANCH caveman.pl -v
             if [ "$CIRCLE_TAG" = "$BRANCH_OR_TAG" ]; then
               echo 'Pushing image'
               docker push $IMAGE_NAME:$CLEAN_BRANCH
