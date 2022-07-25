@@ -1,6 +1,6 @@
 # CHANGES
 
-## add_mnv_support
+## 1.18.0
 
 * Updated to cgpCaVEManPostProcessing [1.12.0](https://github.com/cancerit/cgpCaVEManPostProcessing/releases/tag/1.12.0)
 
