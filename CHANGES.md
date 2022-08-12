@@ -1,5 +1,10 @@
 # CHANGES
 
+## 1.18.2
+
+- Update CaVEMAn core to [1.15.2](https://github.com/cancerit/CaVEMan/releases/tag/1.15.2)
+- Minor bugfix in VCF output. Genotypes now output as unphased rather than phased.
+
 ## 1.18.1
 
 - Updated to cgpCaVEManPostProcessing [1.12.0](https://github.com/cancerit/cgpCaVEManPostProcessing/releases/tag/1.12.0)
