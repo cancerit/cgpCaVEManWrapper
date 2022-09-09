@@ -5,7 +5,7 @@ USER  root
 # ALL tool versions used by opt-build.sh
 ENV VER_VCFTOOLS="0.1.16"
 ENV VER_CGPVCF="v2.2.1"
-ENV VER_CAVEMAN="1.15.2"
+ENV VER_CAVEMAN="1.15.3"
 ENV VER_BEDTOOLS="2.27.1"
 ENV VER_CGPCAVEPOSTPROC="1.12.0"
 
@@ -45,7 +45,7 @@ FROM ubuntu:20.04
 
 LABEL maintainer="cgphelp@sanger.ac.uk" \
       uk.ac.sanger.cgp="Cancer, Ageing and Somatic Mutation, Wellcome Trust Sanger Institute" \
-      version="1.18.2" \
+      version="1.18.3" \
       description="cgpCaVEManWrapper docker"
 
 

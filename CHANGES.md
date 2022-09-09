@@ -1,5 +1,10 @@
 # CHANGES
 
+## 1.18.3
+
+- Update CaVEMan core to [1.15.3](https://github.com/cancerit/CaVEMan/releases/tag/1.15.3)
+- Removes requirement for CWD as this can break nf
+
 ## 1.18.2
 
 - Update CaVEMAn core to [1.15.2](https://github.com/cancerit/CaVEMan/releases/tag/1.15.2)
