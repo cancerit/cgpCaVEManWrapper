@@ -1,5 +1,9 @@
 # CHANGES
 
+## 1.19.2
+
+- Update ci to include copying generateCavemanUMNormVCF into the image
+
 ## 1.19.1
 
 - Update Dockerfile to include copying generateCavemanUMNormVCF into the image
