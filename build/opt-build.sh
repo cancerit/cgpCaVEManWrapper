@@ -103,6 +103,7 @@ if [ ! -e $SETUP_DIR/CaVEMan.success ]; then
   make -j$CPU prefix=$INST_PATH
   cp bin/caveman $INST_PATH/bin/.
   cp bin/mergeCavemanResults $INST_PATH/bin/.
+  cp bin/generateCavemanUMNormVCF $INST_PATH/bin/.
   cd $SETUP_DIR
   rm -rf distro.* distro/*
   touch $SETUP_DIR/CaVEMan.success

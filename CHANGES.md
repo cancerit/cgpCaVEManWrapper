@@ -1,5 +1,9 @@
 # CHANGES
 
+## 1.19.1
+
+- Update Dockerfile to include copying generateCavemanUMNormVCF into the image
+
 ## 1.18.3
 
 - Update CaVEMan core to [1.15.3](https://github.com/cancerit/CaVEMan/releases/tag/1.15.3)
