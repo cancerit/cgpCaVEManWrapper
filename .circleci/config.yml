@@ -38,6 +38,7 @@ jobs:
             docker run -t --rm $IMAGE_NAME:$CLEAN_BRANCH caveman -v
             docker run -t --rm $IMAGE_NAME:$CLEAN_BRANCH cgpFlagCaVEMan.pl --version
             docker run -t --rm $IMAGE_NAME:$CLEAN_BRANCH caveman.pl -v
+            docker run -t --rm $IMAGE_NAME:$CLEAN_BRANCH generateCavemanUMNormVCF -h
             if [ "$CIRCLE_TAG" = "$BRANCH_OR_TAG" ]; then
               echo 'Pushing image'
               docker push $IMAGE_NAME:$CLEAN_BRANCH
