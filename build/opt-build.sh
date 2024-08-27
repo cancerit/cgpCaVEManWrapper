@@ -50,18 +50,18 @@ export PERL5LIB=`echo $INST_PATH/lib/perl5:$PERL5LIB | perl -pe 's/:\$//;'`
 export C_INCLUDE_PATH=`echo $INST_PATH/include/ | perl -pe 's/:\$//;'`
 set -u
 
-## linasm library required by CaVEMan core
-if [ ! -e $SETUP_DIR/linasm.success ]; then
-  curl -sSL --retry 10 https://sourceforge.net/projects/linasm/files/linasm-1.13%28stable%29.tar.gz/download > distro.tar.gz
-  rm -rf distro/*
-  tar --strip-components 1 -C distro -xzf distro.tar.gz
-  cd distro
-  make
-  make install prefix=$INST_PATH
-  cd $SETUP_DIR
-  rm -rf distro.* distro/*
-  touch $SETUP_DIR/linasm.success.success
-fi
+# ## linasm library required by CaVEMan core
+# if [ ! -e $SETUP_DIR/linasm.success ]; then
+#   curl -sSL --retry 10 https://sourceforge.net/projects/linasm/files/linasm-1.13%28stable%29.tar.gz/download > distro.tar.gz
+#   rm -rf distro/*
+#   tar --strip-components 1 -C distro -xzf distro.tar.gz
+#   cd distro
+#   make
+#   make install prefix=$INST_PATH
+#   cd $SETUP_DIR
+#   rm -rf distro.* distro/*
+#   touch $SETUP_DIR/linasm.success.success
+# fi
 
 
 ## vcftools
@@ -97,13 +97,12 @@ if [ ! -e $SETUP_DIR/CaVEMan.success ]; then
   rm -rf distro/*
   tar --strip-components 1 -C distro -xzf distro.tar.gz
   cd distro
-  mkdir -p c/bin
-
-  make clean
-  make -j$CPU prefix=$INST_PATH
-  cp bin/caveman $INST_PATH/bin/.
-  cp bin/mergeCavemanResults $INST_PATH/bin/.
-  cp bin/generateCavemanUMNormVCF $INST_PATH/bin/.
+  mkdir install
+  ./setup.sh install/
+  cp install/bin/caveman $INST_PATH/bin/.
+  cp install/bin/mergeCavemanResults $INST_PATH/bin/.
+  cp install/bin/generateCavemanUMNormVCF $INST_PATH/bin/.
+  cp -r install/lib/* $INST_PATH/lib
   cd $SETUP_DIR
   rm -rf distro.* distro/*
   touch $SETUP_DIR/CaVEMan.success

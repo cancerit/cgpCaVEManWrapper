@@ -5,7 +5,7 @@ USER  root
 # ALL tool versions used by opt-build.sh
 ENV VER_VCFTOOLS="0.1.16"
 ENV VER_CGPVCF="v2.2.1"
-ENV VER_CAVEMAN="1.15.3"
+ENV VER_CAVEMAN="1.15.4"
 ENV VER_BEDTOOLS="2.27.1"
 ENV VER_CGPCAVEPOSTPROC="1.12.0"
 
@@ -20,6 +20,8 @@ RUN apt-get install -yq --no-install-recommends zlib1g-dev
 RUN apt-get install -yq --no-install-recommends libbz2-dev
 RUN apt-get install -yq --no-install-recommends liblzma-dev
 RUN apt-get install -yq --no-install-recommends libcurl4-openssl-dev
+RUN apt-get install -yq --no-install-recommends wget
+RUN apt-get install -yq --no-install-recommends unzip
 
 
 RUN locale-gen en_US.UTF-8
@@ -45,7 +47,7 @@ FROM ubuntu:20.04
 
 LABEL maintainer="cgphelp@sanger.ac.uk" \
       uk.ac.sanger.cgp="Cancer, Ageing and Somatic Mutation, Wellcome Trust Sanger Institute" \
-      version="1.19.2" \
+      version="1.19.0" \
       description="cgpCaVEManWrapper docker"
 
 

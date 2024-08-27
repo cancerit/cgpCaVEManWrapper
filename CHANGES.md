@@ -1,12 +1,11 @@
 # CHANGES
 
-## 1.19.2
+## 1.19.0
 
-- Update ci to include copying generateCavemanUMNormVCF into the image
+- Update to caveman 1.15.4
+- Update Dockerfile to include copying generateCavemanUMNormVCF into the image, and tweak CI to understand that
+- Update Dockerfile to use setup.sh install method from caveman repo and ensure linasm.so is on LD PATH
 
-## 1.19.1
-
-- Update Dockerfile to include copying generateCavemanUMNormVCF into the image
 
 ## 1.18.3
 
